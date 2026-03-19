@@ -8,7 +8,6 @@
 
   var sidebar       = document.getElementById('sidebar');
   var sidebarToggle = document.getElementById('sidebarToggle');
-  var statTotal     = document.getElementById('statTotal');
   var topbarTitle   = document.getElementById('topbarTitle');
   var navItems      = document.querySelectorAll('.nav-item');
   var toolPanels    = document.querySelectorAll('.tool-panel');
@@ -18,6 +17,8 @@
     'leaderboard': 'Leaderboard',
     'friends':     'Friends',
     'challenges':  'Challenges',
+    'profile':     'Profile',
+    'shop':        'Shop',
   };
 
   // ── Sidebar Toggle ───────────────────────────────────────
@@ -29,13 +30,22 @@
     }
   });
 
-  // ── Show card count in topbar ────────────────────────────
-  if (typeof ANKI_CARDS !== 'undefined') {
-    statTotal.textContent = ANKI_CARDS.length + ' cards';
-  }
+  // ── Card count is now shown via CoinSystem topbar ───────
 
   // ── Init ANKI game on load ───────────────────────────────
   if (window.AnkiEngine) AnkiEngine.init();
+
+  // ── Init Coin System topbar ─────────────────────────────
+  if (window.CoinSystem) CoinSystem.init();
+
+  // ── Loading screen fade-out ─────────────────────────────
+  setTimeout(function () {
+    var loadingScreen = document.getElementById('loadingScreen');
+    if (loadingScreen) {
+      loadingScreen.classList.add('fade-out');
+      setTimeout(function () { loadingScreen.remove(); }, 600);
+    }
+  }, 1500);
 
   // ── Nav switching ────────────────────────────────────────
   navItems.forEach(function (item) {
@@ -61,13 +71,6 @@
       // Update topbar
       if (topbarTitle) topbarTitle.textContent = toolTitles[tool] || tool;
 
-      // Update topbar meta
-      if (tool === 'anki' && typeof ANKI_CARDS !== 'undefined') {
-        statTotal.textContent = ANKI_CARDS.length + ' cards';
-      } else {
-        statTotal.textContent = '';
-      }
-
       // Close mobile sidebar
       sidebar.classList.remove('mobile-open');
 
@@ -76,6 +79,8 @@
       if (tool === 'leaderboard' && window.Leaderboard) Leaderboard.init();
       if (tool === 'friends' && window.Friends)        Friends.init();
       if (tool === 'challenges' && window.Challenges)  Challenges.init();
+      if (tool === 'profile' && window.Profile)        Profile.init();
+      if (tool === 'shop' && window.Shop)              Shop.init();
     });
   });
 

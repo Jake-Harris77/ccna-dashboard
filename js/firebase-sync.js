@@ -56,7 +56,19 @@ var FirebaseSync = (function () {
           if (anki.sections[sid].defeated) conquered++;
         }
       }
-      await userDoc().set({
+      // Load profile for avatar/border sync
+      var profileData = {};
+      if (typeof Profile !== 'undefined') {
+        var prof = Profile.loadProfile();
+        profileData = {
+          avatar: prof.avatar || 'router',
+          border: prof.border || 0,
+          ownedBorders: prof.ownedBorders || [0, 1],
+          ownedAvatars: prof.ownedAvatars || [],
+        };
+      }
+
+      await userDoc().set(Object.assign({
         displayName:      user.displayName || user.email.split('@')[0],
         photoURL:         user.photoURL || null,
         email:            user.email,
@@ -64,13 +76,19 @@ var FirebaseSync = (function () {
         level:            levelFromXP(anki.xp || 0),
         totalCorrect:     anki.totalCorrect || 0,
         bestStreak:       anki.bestStreak || 0,
+        coins:            anki.coins || 0,
         sectionsConquered: conquered,
         lastSeen:         firebase.firestore.FieldValue.serverTimestamp(),
         joinedAt:         firebase.firestore.FieldValue.serverTimestamp(),
-      }, { merge: true });
+      }, profileData), { merge: true });
 
       // Pull cloud game state
       await pullFromCloud();
+
+      // Pull profile (avatar/border) from Firestore
+      if (typeof Profile !== 'undefined') {
+        await Profile.pullProfileFromFirestore();
+      }
 
       setSyncStatus('synced', 'Synced');
     } catch (err) {
@@ -174,14 +192,26 @@ var FirebaseSync = (function () {
             if (anki.sections[sid].defeated) conquered++;
           }
         }
-        batch.set(userDoc(), {
+        var profileUpdate = {};
+        if (typeof Profile !== 'undefined') {
+          var prof = Profile.loadProfile();
+          profileUpdate = {
+            avatar: prof.avatar || 'router',
+            border: prof.border || 0,
+            ownedBorders: prof.ownedBorders || [0, 1],
+            ownedAvatars: prof.ownedAvatars || [],
+          };
+        }
+
+        batch.set(userDoc(), Object.assign({
           xp:                anki.xp || 0,
           level:             levelFromXP(anki.xp || 0),
           totalCorrect:      anki.totalCorrect || 0,
           bestStreak:        anki.bestStreak || 0,
+          coins:             anki.coins || 0,
           sectionsConquered: conquered,
           lastSeen:          firebase.firestore.FieldValue.serverTimestamp(),
-        }, { merge: true });
+        }, profileUpdate), { merge: true });
       }
 
       if (quiz) {

@@ -40,6 +40,7 @@
       xp: 0, totalCorrect: 0, totalWrong: 0, bestStreak: 0,
       sections: {}, cardStats: {},
       mode: 'recall',
+      coins: 0,
     };
   }
 
@@ -584,7 +585,12 @@
     const cs = ensureCardStats(card.id);
 
     if (correct) {
-      const earned = Math.round((10 + speedBonus - hintPenalty) * comboMult);
+      // Check level before XP gain for level-up detection
+      const levelBefore = levelFromXP(game.xp);
+
+      // Apply XP booster multiplier if active
+      const boosterMult = (typeof CoinSystem !== 'undefined') ? CoinSystem.getBoosterMultiplier() : 1;
+      const earned = Math.round((10 + speedBonus - hintPenalty) * comboMult * boosterMult);
       const xpGain = Math.max(earned, 1);
       game.xp += xpGain;
       game.totalCorrect++;
@@ -593,6 +599,16 @@
       session.sessionCorrect++;
       session.sessionXP += xpGain;
       if (session.streak > game.bestStreak) game.bestStreak = session.streak;
+
+      // Award 1 coin per correct answer
+      game.coins = (game.coins || 0) + 1;
+
+      // Check for level-up and award 25 coins
+      const levelAfter = levelFromXP(game.xp);
+      if (levelAfter > levelBefore) {
+        game.coins += 25;
+        if (typeof CoinSystem !== 'undefined') CoinSystem.updateTopbar();
+      }
       const damage = Math.round((10 + speedBonus) * (session.hintLevel === 0 ? 1.5 : 1));
       session.bossHP = Math.max(0, session.bossHP - damage);
       cs.consecutiveCorrect = (cs.consecutiveCorrect || 0) + 1;
@@ -612,6 +628,9 @@
     }
 
     saveGame(game);
+
+    // Update topbar stats after each answer
+    if (typeof CoinSystem !== 'undefined') CoinSystem.updateTopbar();
 
     if (autoAdvance) {
       // MC mode: show post-answer buttons (Explain + Next)
@@ -645,7 +664,13 @@
     const bonusXP = 50;
     game.xp += bonusXP;
     session.sessionXP += bonusXP;
+
+    // Award 5 coins for boss victory
+    game.coins = (game.coins || 0) + 5;
     saveGame(game);
+
+    // Update topbar stats
+    if (typeof CoinSystem !== 'undefined') CoinSystem.updateTopbar();
 
     const level = levelFromXP(game.xp);
     const mInfo = session.sectionId ? getSectionMasteryInfo(session.sectionId) : { mastered: 0, total: 0 };

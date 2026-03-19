@@ -8,8 +8,23 @@
   <link rel="stylesheet" href="css/anki.css" />
   <link rel="stylesheet" href="css/social.css" />
   <link rel="stylesheet" href="css/firebase-auth.css" />
+  <link rel="stylesheet" href="css/gamification.css" />
 </head>
 <body>
+
+  <!-- ── Loading Screen ──────────────────────────────────── -->
+  <div class="loading-screen" id="loadingScreen">
+    <svg class="loading-logo" viewBox="0 0 210 55">
+      <polyline points="0,28 22,28 34,10 46,46 58,28 210,28" fill="none" stroke="#00f0ff" stroke-width="2" opacity="0.4"/>
+      <circle cx="58" cy="28" r="4" fill="#00f0ff" opacity="0.8"/>
+      <circle cx="58" cy="28" r="8" fill="none" stroke="#00f0ff" stroke-width="0.8" opacity="0.3"/>
+      <text x="6" y="40" font-family="monospace" font-weight="900" font-size="32" fill="#00f0ff" letter-spacing="1">NET</text>
+      <text x="82" y="40" font-family="monospace" font-weight="900" font-size="32" fill="#e8f4ff" letter-spacing="1">READY</text>
+      <rect x="6" y="44" width="70" height="2.5" rx="1.2" fill="#00f0ff" opacity="0.6"/>
+    </svg>
+    <div class="loading-subtitle">PATH TO CCNA CERTIFICATION</div>
+    <div class="loading-bar"><div class="loading-bar-fill"></div></div>
+  </div>
 
   <!-- ── Sidebar ─────────────────────────────────────────── -->
   <aside class="sidebar" id="sidebar">
@@ -58,6 +73,25 @@
         </svg>
         <span>Challenges</span>
       </a>
+
+      <div class="nav-section-label" style="margin-top:24px;">You</div>
+
+      <a href="#" class="nav-item" data-tool="profile">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        <span>Profile</span>
+      </a>
+
+      <a href="#" class="nav-item" data-tool="shop">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <path d="M16 10a4 4 0 01-8 0"/>
+        </svg>
+        <span>Shop</span>
+      </a>
     </nav>
 
     <div class="sidebar-footer">
@@ -76,8 +110,32 @@
         </svg>
       </button>
       <h1 class="topbar-title" id="topbarTitle">Territory Map</h1>
-      <div class="topbar-meta">
-        <span class="stat-chip" id="statTotal"></span>
+
+      <!-- Topbar Stats -->
+      <div class="topbar-stats">
+        <!-- Level + XP bar -->
+        <div class="topbar-level-badge">
+          <div class="topbar-level-num" id="topbarLevelNum">1</div>
+          <div class="topbar-xp-mini">
+            <span class="topbar-xp-label" id="topbarXpLabel">0 / 100 XP</span>
+            <div class="topbar-xp-bar"><div class="topbar-xp-fill" id="topbarXpFill" style="width:0%"></div></div>
+          </div>
+        </div>
+
+        <!-- Coins -->
+        <div class="topbar-coins">
+          <svg class="topbar-coin-icon" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" fill="#fbbf24" opacity="0.2" stroke="#fbbf24" stroke-width="1.5"/>
+            <text x="12" y="16" text-anchor="middle" font-size="11" font-weight="bold" fill="#fbbf24">$</text>
+          </svg>
+          <span id="topbarCoinCount">0</span>
+        </div>
+
+        <!-- Active booster indicator (hidden by default) -->
+        <div class="topbar-booster" id="topbarBooster" style="display:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          <span class="booster-time">2x</span>
+        </div>
       </div>
 
       <!-- Auth UI -->
@@ -124,6 +182,16 @@
       <!-- Populated by challenges.js -->
     </section>
 
+    <!-- Profile -->
+    <section class="tool-panel" id="tool-profile">
+      <!-- Populated by profile.js -->
+    </section>
+
+    <!-- Shop -->
+    <section class="tool-panel" id="tool-shop">
+      <!-- Populated by shop.js -->
+    </section>
+
   </main>
 
   <!-- ── Login Modal ──────────────────────────────────────── -->
@@ -164,6 +232,9 @@
   <script src="js/firebase-config.js"></script>
   <script src="js/anki-data.js"></script>
   <script src="js/anki.js"></script>
+  <script src="js/coins.js"></script>
+  <script src="js/profile.js"></script>
+  <script src="js/shop.js"></script>
   <script src="js/firebase-sync.js"></script>
   <script src="js/leaderboard.js"></script>
   <script src="js/friends.js"></script>
