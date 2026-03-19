@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-//  NetDash — Firebase Sync
+//  NetReady — Firebase Sync
 //  Syncs localStorage game state ↔ Firestore
 //  Offline-first: localStorage is primary, Firestore is sync layer
 // ─────────────────────────────────────────────────────────────────────────────

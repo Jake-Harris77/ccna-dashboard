@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-//  NetDash — Anki Card Data (extracted from Flackbox CCNA 200-301 v1.3)
+//  NetReady — Anki Card Data (extracted from Flackbox CCNA 200-301 v1.3)
 //  668 cards across 36 sections
 // ─────────────────────────────────────────────────────────────────────────────
 

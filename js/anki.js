@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-//  NetDash — ANKI Game Engine
+//  NetReady — ANKI Game Engine
 //  Territory map, boss battles, flashcards with hints, XP/leveling, mastery
 //  Modes: Free Recall (flip card) + Brain Memory (multiple choice)
 // ─────────────────────────────────────────────────────────────────────────────

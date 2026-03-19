@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-//  NetDash — Firebase Configuration (Compat SDK)
+//  NetReady — Firebase Configuration (Compat SDK)
 // ─────────────────────────────────────────────────────────────────────────────
 
 const firebaseConfig = {

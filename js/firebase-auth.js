@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-//  NetDash — Firebase Authentication
+//  NetReady — Firebase Authentication
 //  Google + Email/Password sign-in, topbar UI, auth state management
 // ─────────────────────────────────────────────────────────────────────────────
 
