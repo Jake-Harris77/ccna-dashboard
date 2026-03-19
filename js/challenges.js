@@ -28,9 +28,10 @@ var Challenges = (function () {
 
     try {
       // Get challenges where user is involved (from or to)
+      // Simple queries without orderBy to avoid needing composite indexes
       var [fromSnap, toSnap] = await Promise.all([
-        db.collection('challenges').where('from', '==', user.uid).orderBy('createdAt', 'desc').limit(20).get(),
-        db.collection('challenges').where('to', '==', user.uid).orderBy('createdAt', 'desc').limit(20).get(),
+        db.collection('challenges').where('from', '==', user.uid).get(),
+        db.collection('challenges').where('to', '==', user.uid).get(),
       ]);
 
       var challenges = [];
