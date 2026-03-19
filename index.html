@@ -6,6 +6,7 @@
   <title>NetReady — CCNA Study Game</title>
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/anki.css" />
+  <link rel="stylesheet" href="css/social.css" />
   <link rel="stylesheet" href="css/firebase-auth.css" />
 </head>
 <body>
@@ -35,30 +36,27 @@
 
       <div class="nav-section-label" style="margin-top:24px;">Social</div>
 
-      <a href="#" class="nav-item disabled" data-tool="leaderboard" title="Coming soon">
+      <a href="#" class="nav-item" data-tool="leaderboard">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M8 21V11M16 21V7M12 21V3"/>
         </svg>
         <span>Leaderboard</span>
-        <span class="badge-soon">Soon</span>
       </a>
 
-      <a href="#" class="nav-item disabled" data-tool="friends" title="Coming soon">
+      <a href="#" class="nav-item" data-tool="friends">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
           <circle cx="9" cy="7" r="4"/>
           <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
         </svg>
         <span>Friends</span>
-        <span class="badge-soon">Soon</span>
       </a>
 
-      <a href="#" class="nav-item disabled" data-tool="challenges" title="Coming soon">
+      <a href="#" class="nav-item" data-tool="challenges">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
         </svg>
         <span>Challenges</span>
-        <span class="badge-soon">Soon</span>
       </a>
     </nav>
 
@@ -77,7 +75,7 @@
           <path d="M3 6h18M3 12h18M3 18h18"/>
         </svg>
       </button>
-      <h1 class="topbar-title">NetReady</h1>
+      <h1 class="topbar-title" id="topbarTitle">Territory Map</h1>
       <div class="topbar-meta">
         <span class="stat-chip" id="statTotal"></span>
       </div>
@@ -107,8 +105,23 @@
     </header>
 
     <!-- ANKI Game -->
-    <section class="tool-panel" id="tool-anki">
+    <section class="tool-panel active" id="tool-anki">
       <!-- Populated by anki.js -->
+    </section>
+
+    <!-- Leaderboard -->
+    <section class="tool-panel" id="tool-leaderboard">
+      <!-- Populated by leaderboard.js -->
+    </section>
+
+    <!-- Friends -->
+    <section class="tool-panel" id="tool-friends">
+      <!-- Populated by friends.js -->
+    </section>
+
+    <!-- Challenges -->
+    <section class="tool-panel" id="tool-challenges">
+      <!-- Populated by challenges.js -->
     </section>
 
   </main>
@@ -149,11 +162,13 @@
 
   <!-- App scripts -->
   <script src="js/firebase-config.js"></script>
-  <script src="js/app.js"></script>
   <script src="js/anki-data.js"></script>
   <script src="js/anki.js"></script>
-  <script>if (window.AnkiEngine) AnkiEngine.init();</script>
   <script src="js/firebase-sync.js"></script>
+  <script src="js/leaderboard.js"></script>
+  <script src="js/friends.js"></script>
+  <script src="js/challenges.js"></script>
+  <script src="js/app.js"></script>
   <script src="js/firebase-auth.js"></script>
 </body>
 </html>

@@ -80,15 +80,13 @@ input, button { outline: none; border: none; }
 }
 
 .sidebar-logo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px 12px 12px;
+  display: block;
+  padding: 20px 14px 16px;
   border-bottom: 1px solid var(--border);
 }
 .logo-icon {
+  display: block;
   width: 100%;
-  max-width: 210px;
   height: auto;
 }
 

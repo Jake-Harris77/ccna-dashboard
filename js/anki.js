@@ -106,6 +106,7 @@
   let session = {
     view: 'map', sectionId: null, cards: [], cardIndex: 0,
     lives: 3, bossHP: 0, bossMaxHP: 0, streak: 0, sessionXP: 0,
+    sessionCorrect: 0, sessionWrong: 0,
     hintsUsed: 0, hintLevel: 0, flipped: false, timerStart: 0,
     answered: false,
   };
@@ -286,7 +287,10 @@
     session.bossHP = secData.hp !== undefined ? secData.hp : session.bossMaxHP;
     session.streak = 0;
     session.sessionXP = 0;
+    session.sessionCorrect = 0;
+    session.sessionWrong = 0;
     session.hintsUsed = 0;
+    session.timerStart = Date.now();
     renderBattle();
   }
 
@@ -300,7 +304,10 @@
     session.bossHP = 200;
     session.streak = 0;
     session.sessionXP = 0;
+    session.sessionCorrect = 0;
+    session.sessionWrong = 0;
     session.hintsUsed = 0;
+    session.timerStart = Date.now();
     renderBattle();
   }
 
@@ -583,6 +590,7 @@
       game.totalCorrect++;
       cs.correct++;
       session.streak++;
+      session.sessionCorrect++;
       session.sessionXP += xpGain;
       if (session.streak > game.bestStreak) game.bestStreak = session.streak;
       const damage = Math.round((10 + speedBonus) * (session.hintLevel === 0 ? 1.5 : 1));
@@ -595,6 +603,7 @@
       game.totalWrong++;
       cs.wrong++;
       session.streak = 0;
+      session.sessionWrong++;
       session.lives--;
       cs.consecutiveCorrect = 0;
       cs.lastReview = Date.now();
@@ -662,6 +671,11 @@
       </div>
     `;
     el('ankiVictoryMap').addEventListener('click', renderMap);
+
+    // Record challenge score if active
+    if (typeof Challenges !== 'undefined' && Challenges.recordScore) {
+      Challenges.recordScore(session.sessionCorrect, session.sessionWrong, Date.now() - session.timerStart);
+    }
   }
 
   function renderDefeat () {
@@ -696,6 +710,11 @@
     `;
     el('ankiDefeatRetry').addEventListener('click', () => startBossBattle(session.sectionId));
     el('ankiDefeatMap').addEventListener('click', renderMap);
+
+    // Record challenge score if active
+    if (typeof Challenges !== 'undefined' && Challenges.recordScore) {
+      Challenges.recordScore(session.sessionCorrect, session.sessionWrong, Date.now() - session.timerStart);
+    }
   }
 
   // ── Utility ───────────────────────────────────────────────
@@ -708,5 +727,5 @@
     return a;
   }
 
-  window.AnkiEngine = { init };
+  window.AnkiEngine = { init: init, startBattle: startBossBattle };
 })();

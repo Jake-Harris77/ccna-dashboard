@@ -48,12 +48,25 @@ var FirebaseSync = (function () {
     setSyncStatus('syncing', 'Syncing…');
 
     try {
-      // Ensure profile doc exists
+      // Ensure profile doc exists with expanded data
+      var anki = loadLocal(ANKI_KEY) || {};
+      var conquered = 0;
+      if (anki.sections) {
+        for (var sid in anki.sections) {
+          if (anki.sections[sid].defeated) conquered++;
+        }
+      }
       await userDoc().set({
-        displayName: user.displayName || user.email.split('@')[0],
-        photoURL:    user.photoURL || null,
-        email:       user.email,
-        lastSeen:    firebase.firestore.FieldValue.serverTimestamp(),
+        displayName:      user.displayName || user.email.split('@')[0],
+        photoURL:         user.photoURL || null,
+        email:            user.email,
+        xp:               anki.xp || 0,
+        level:            levelFromXP(anki.xp || 0),
+        totalCorrect:     anki.totalCorrect || 0,
+        bestStreak:       anki.bestStreak || 0,
+        sectionsConquered: conquered,
+        lastSeen:         firebase.firestore.FieldValue.serverTimestamp(),
+        joinedAt:         firebase.firestore.FieldValue.serverTimestamp(),
       }, { merge: true });
 
       // Pull cloud game state
@@ -154,11 +167,20 @@ var FirebaseSync = (function () {
 
       if (anki) {
         batch.set(ankiDoc(), { state: anki, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
-        // Update profile XP/level
+        // Update profile with expanded stats
+        var conquered = 0;
+        if (anki.sections) {
+          for (var sid in anki.sections) {
+            if (anki.sections[sid].defeated) conquered++;
+          }
+        }
         batch.set(userDoc(), {
-          xp:       anki.xp || 0,
-          level:    levelFromXP(anki.xp || 0),
-          lastSeen: firebase.firestore.FieldValue.serverTimestamp(),
+          xp:                anki.xp || 0,
+          level:             levelFromXP(anki.xp || 0),
+          totalCorrect:      anki.totalCorrect || 0,
+          bestStreak:        anki.bestStreak || 0,
+          sectionsConquered: conquered,
+          lastSeen:          firebase.firestore.FieldValue.serverTimestamp(),
         }, { merge: true });
       }
 
@@ -193,10 +215,13 @@ var FirebaseSync = (function () {
 
   // ── Public API ────────────────────────────────────────────
   return {
-    onSignIn:  onSignIn,
-    onSignOut: onSignOut,
-    saveAnki:  saveAnki,
-    saveQuiz:  saveQuiz,
+    onSignIn:       onSignIn,
+    onSignOut:      onSignOut,
+    saveAnki:       saveAnki,
+    saveQuiz:       saveQuiz,
+    getCurrentUser: function () { return currentUser; },
+    getDb:          function () { return db; },
+    isSignedIn:     function () { return syncEnabled && currentUser !== null; },
   };
 
 })();

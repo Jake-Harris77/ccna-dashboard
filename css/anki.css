@@ -4,7 +4,8 @@
    ───────────────────────────────────────────────────────── */
 
 /* ── Panel visibility ────────────────────────────────────── */
-#tool-anki { display: flex; flex-direction: column; gap: 0; }
+#tool-anki { display: none; }
+#tool-anki.active { display: flex; flex-direction: column; gap: 0; }
 
 /* ═══════════════════════════════════════════════════════════
    TERRITORY MAP VIEW
