@@ -9,6 +9,11 @@ var Profile = (function () {
   const STORAGE_KEY = 'ccna_anki_game';
   const PROFILE_KEY = 'ccna_profile';
 
+  function loadGame () {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
+    catch (_) { return {}; }
+  }
+
   // ── Avatar SVG definitions (IT-themed) ─────────────────────
   const AVATARS = {
     // Free avatars
