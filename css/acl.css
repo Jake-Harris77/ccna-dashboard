@@ -1,0 +1,429 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   ACL Builder & Explainer — styles
+   Piggybacks on the CSS variables defined in style.css
+───────────────────────────────────────────────────────────────────────────── */
+
+/* ── Wrapper ─────────────────────────────────────────────────────────────── */
+.acl-wrapper {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 4px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ── Mode tabs ───────────────────────────────────────────────────────────── */
+.acl-mode-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 4px;
+  width: fit-content;
+}
+
+.acl-tab {
+  padding: 8px 20px;
+  border-radius: 7px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted, #8892a4);
+  font-size: 0.88rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.acl-tab:hover {
+  color: var(--text, #e2e8f0);
+  background: var(--bg-card);
+}
+
+.acl-tab.active {
+  background: var(--bg-card);
+  color: var(--accent, #00c2ff);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+
+/* ── Two-column layout ───────────────────────────────────────────────────── */
+.acl-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .acl-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Panel card ──────────────────────────────────────────────────────────── */
+.acl-panel {
+  background: var(--bg-card, #1a1f2e);
+  border: 1px solid var(--border, #2a3044);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.acl-panel-title {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted, #8892a4);
+  margin: 0 0 2px;
+}
+
+/* ── ACL name + type row ─────────────────────────────────────────────────── */
+.acl-name-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.acl-name-input {
+  flex: 1;
+  min-width: 120px;
+  padding: 8px 12px;
+  background: var(--bg-elevated, #1e2330);
+  border: 1px solid var(--border, #2a3044);
+  border-radius: 7px;
+  color: var(--text, #e2e8f0);
+  font-size: 0.875rem;
+  font-family: inherit;
+  transition: border-color 0.15s;
+}
+
+.acl-name-input:focus {
+  outline: none;
+  border-color: var(--accent, #00c2ff);
+}
+
+.acl-type-select {
+  padding: 8px 12px;
+  background: var(--bg-elevated, #1e2330);
+  border: 1px solid var(--border, #2a3044);
+  border-radius: 7px;
+  color: var(--text, #e2e8f0);
+  font-size: 0.875rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.acl-type-select:focus {
+  outline: none;
+  border-color: var(--accent, #00c2ff);
+}
+
+/* ── Textarea ─────────────────────────────────────────────────────────────── */
+.acl-textarea {
+  width: 100%;
+  min-height: 200px;
+  padding: 12px 14px;
+  background: var(--bg-elevated, #1e2330);
+  border: 1px solid var(--border, #2a3044);
+  border-radius: 8px;
+  color: var(--text, #e2e8f0);
+  font-size: 0.875rem;
+  font-family: 'Courier New', 'Consolas', monospace;
+  line-height: 1.6;
+  resize: vertical;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+}
+
+.acl-textarea:focus {
+  outline: none;
+  border-color: var(--accent, #00c2ff);
+}
+
+.acl-textarea::placeholder {
+  color: var(--text-muted, #8892a4);
+  opacity: 0.7;
+}
+
+/* ── Input footer ────────────────────────────────────────────────────────── */
+.acl-input-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.acl-line-count {
+  font-size: 0.78rem;
+  color: var(--text-muted, #8892a4);
+}
+
+.acl-action-btn {
+  padding: 9px 22px;
+  background: var(--accent, #00c2ff);
+  color: #0a0e17;
+  border: none;
+  border-radius: 7px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+  white-space: nowrap;
+}
+
+.acl-action-btn:hover {
+  opacity: 0.88;
+}
+
+.acl-action-btn:active {
+  transform: scale(0.97);
+}
+
+/* ── Tip box ──────────────────────────────────────────────────────────────── */
+.acl-tip-box {
+  background: rgba(251, 191, 36, 0.07);
+  border: 1px solid rgba(251, 191, 36, 0.22);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.82rem;
+  color: var(--text-muted, #8892a4);
+  line-height: 1.5;
+}
+
+.acl-tip-box strong {
+  color: var(--yellow, #fbbf24);
+}
+
+/* ── Output panel ────────────────────────────────────────────────────────── */
+.acl-output-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.acl-copy-btn {
+  padding: 6px 16px;
+  background: transparent;
+  border: 1px solid var(--border, #2a3044);
+  border-radius: 7px;
+  color: var(--text-muted, #8892a4);
+  font-size: 0.8rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.acl-copy-btn:hover {
+  border-color: var(--accent, #00c2ff);
+  color: var(--accent, #00c2ff);
+}
+
+.acl-copy-btn.copied {
+  border-color: var(--green, #22d47c);
+  color: var(--green, #22d47c);
+}
+
+/* ── Generated code block ────────────────────────────────────────────────── */
+.acl-output-block {
+  display: none;
+}
+
+.acl-output-block.visible {
+  display: block;
+}
+
+.acl-code {
+  background: var(--bg-elevated, #1e2330);
+  border: 1px solid var(--border, #2a3044);
+  border-left: 3px solid var(--accent, #00c2ff);
+  border-radius: 8px;
+  padding: 14px 16px;
+  font-family: 'Courier New', 'Consolas', monospace;
+  font-size: 0.82rem;
+  line-height: 1.7;
+  color: var(--text, #e2e8f0);
+  white-space: pre;
+  overflow-x: auto;
+  margin: 0;
+}
+
+/* ── Breakdown list ──────────────────────────────────────────────────────── */
+.acl-breakdown-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.acl-ace-item {
+  background: var(--bg-elevated, #1e2330);
+  border: 1px solid var(--border, #2a3044);
+  border-left: 3px solid var(--border, #2a3044);
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.ace-permit  { border-left-color: var(--green, #22d47c); }
+.ace-deny    { border-left-color: var(--red, #f87171); }
+.ace-remark  { border-left-color: var(--yellow, #fbbf24); }
+.ace-implicit{ border-left-color: var(--text-muted, #8892a4); }
+.ace-header  { border-left-color: var(--accent, #00c2ff); }
+.ace-error   { border-left-color: var(--red, #f87171); background: rgba(248,113,113,0.05); }
+.ace-warning { border-left-color: var(--yellow, #fbbf24); background: rgba(251,191,36,0.05); }
+
+.acl-ace-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.acl-ace-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.badge-permit   { background: rgba(34,212,124,0.15); color: var(--green, #22d47c); }
+.badge-deny     { background: rgba(248,113,113,0.15); color: var(--red, #f87171); }
+.badge-remark   { background: rgba(251,191,36,0.15);  color: var(--yellow, #fbbf24); }
+.badge-implicit { background: rgba(136,146,164,0.15); color: var(--text-muted, #8892a4); }
+.badge-header   { background: rgba(0,194,255,0.12);   color: var(--accent, #00c2ff); }
+.badge-error    { background: rgba(248,113,113,0.15); color: var(--red, #f87171); }
+.badge-warning  { background: rgba(251,191,36,0.15);  color: var(--yellow, #fbbf24); }
+
+.acl-ace-syntax {
+  font-family: 'Courier New', 'Consolas', monospace;
+  font-size: 0.8rem;
+  color: var(--text, #e2e8f0);
+  word-break: break-all;
+}
+
+.acl-ace-explain {
+  font-size: 0.82rem;
+  color: var(--text-muted, #8892a4);
+  line-height: 1.5;
+}
+
+/* ── Placeholder (empty state) ───────────────────────────────────────────── */
+.acl-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-muted, #8892a4);
+  gap: 10px;
+}
+
+.acl-placeholder svg {
+  width: 40px;
+  height: 40px;
+  opacity: 0.35;
+}
+
+.acl-placeholder p {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+/* ── CCNA Tips accordion ─────────────────────────────────────────────────── */
+.acl-tips-panel {
+  background: var(--bg-card, #1a1f2e);
+  border: 1px solid var(--border, #2a3044);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.acl-tips-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  background: transparent;
+  border: none;
+  color: var(--text, #e2e8f0);
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.acl-tips-toggle:hover {
+  background: var(--bg-elevated, #1e2330);
+}
+
+.acl-tips-toggle-icon {
+  width: 18px;
+  height: 18px;
+  stroke: var(--text-muted, #8892a4);
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+
+.acl-tips-panel.open .acl-tips-toggle-icon {
+  transform: rotate(180deg);
+}
+
+.acl-tips-body {
+  display: none;
+  padding: 0 20px 20px;
+  gap: 12px;
+  flex-direction: column;
+}
+
+.acl-tips-panel.open .acl-tips-body {
+  display: flex;
+}
+
+.acl-tip-card {
+  background: var(--bg-elevated, #1e2330);
+  border: 1px solid var(--border, #2a3044);
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+
+.acl-tip-card-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--accent, #00c2ff);
+  margin: 0 0 6px;
+}
+
+.acl-tip-card p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--text-muted, #8892a4);
+  line-height: 1.55;
+}
+
+.acl-tip-card code {
+  font-family: 'Courier New', monospace;
+  font-size: 0.8rem;
+  background: var(--bg-card, #1a1f2e);
+  padding: 1px 5px;
+  border-radius: 3px;
+  color: var(--text, #e2e8f0);
+}

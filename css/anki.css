@@ -1,0 +1,905 @@
+/* ─────────────────────────────────────────────────────────
+   NetDash — ANKI Game Tab Styles
+   Uses existing CSS variables from style.css
+   ───────────────────────────────────────────────────────── */
+
+/* ── Panel visibility ────────────────────────────────────── */
+#tool-anki { display: none; }
+#tool-anki.active { display: flex; flex-direction: column; gap: 0; }
+
+/* ═══════════════════════════════════════════════════════════
+   TERRITORY MAP VIEW
+   ═══════════════════════════════════════════════════════════ */
+
+.anki-map-view {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 0 4px;
+}
+
+/* ── Player HUD ──────────────────────────────────────────── */
+.anki-hud {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.anki-hud-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+  min-width: 0;
+}
+
+.anki-level-badge {
+  flex-shrink: 0;
+  padding: 6px 14px;
+  background: linear-gradient(135deg, var(--accent), #0088cc);
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.anki-xp-wrap {
+  flex: 1;
+  min-width: 0;
+}
+
+.anki-xp-bar {
+  height: 8px;
+  background: var(--bg-base);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.anki-xp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), #33ceff);
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+.anki-xp-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+  display: block;
+}
+
+.anki-hud-right {
+  display: flex;
+  gap: 20px;
+}
+
+.anki-stat {
+  text-align: center;
+}
+
+.anki-stat-val {
+  display: block;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.anki-stat-lbl {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ── Map Actions ─────────────────────────────────────────── */
+.anki-map-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.anki-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: var(--font-sans);
+}
+
+.anki-btn-accent {
+  background: var(--accent);
+  color: #0f1117;
+}
+.anki-btn-accent:hover { background: var(--accent-hover); transform: translateY(-1px); }
+
+.anki-btn-secondary {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+}
+.anki-btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+.anki-conquest-bar-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.anki-conquest-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--bg-base);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.anki-conquest-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--green), #2ee88e);
+  border-radius: 3px;
+  transition: width 0.5s;
+}
+
+/* ── Territory Grid ──────────────────────────────────────── */
+.anki-territory-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.terr-section-num {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.5px;
+  text-shadow: 0 0 6px var(--accent), 0 0 12px rgba(0,136,255,0.3);
+}
+
+.territory-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 16px;
+  background: var(--bg-card);
+  border: 2px solid var(--mastery-ring, var(--border));
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+  font-family: var(--font-sans);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--mastery-ring, transparent) 25%, transparent);
+}
+
+.territory-tile:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 16px color-mix(in srgb, var(--mastery-ring, transparent) 40%, transparent);
+}
+
+.terr-status-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.terr-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.terr-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+
+.terr-card-count {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.terr-mastery-info {
+  font-size: 10px;
+  color: var(--mastery-ring, var(--accent));
+  font-weight: 600;
+}
+
+.terr-mastery-bar {
+  width: 100%;
+  height: 3px;
+  background: var(--bg-base);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.terr-mastery-fill {
+  height: 100%;
+  background: var(--mastery-ring, var(--accent));
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+
+.terr-due-badge {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--orange, #f59e0b);
+  padding: 2px 8px;
+  border-radius: 8px;
+  animation: pulse-due 2s ease-in-out infinite;
+  text-shadow: 0 0 4px rgba(245,158,11,0.5);
+  align-self: flex-start;
+}
+
+@keyframes pulse-due {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.terr-hp-bar {
+  width: 100%;
+  height: 4px;
+  background: var(--bg-base);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.terr-hp-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+
+/* Territory status colors */
+.terr-unconquered { border-color: var(--red); }
+.terr-unconquered .terr-icon { stroke: var(--red); }
+.terr-unconquered .terr-hp-fill { background: var(--red); }
+.terr-unconquered:hover { border-color: var(--red); box-shadow: 0 4px 20px rgba(248,113,113,0.15); }
+
+.terr-in-progress { border-color: var(--yellow); }
+.terr-in-progress .terr-icon { stroke: var(--yellow); }
+.terr-in-progress .terr-hp-fill { background: var(--yellow); }
+.terr-in-progress:hover { border-color: var(--yellow); box-shadow: 0 4px 20px rgba(251,191,36,0.15); }
+
+.terr-conquered { border-color: var(--green); background: rgba(34,212,124,0.06); }
+.terr-conquered .terr-icon { stroke: var(--green); }
+.terr-conquered:hover { border-color: var(--green); box-shadow: 0 4px 20px rgba(34,212,124,0.15); }
+
+.terr-high-mastery { box-shadow: 0 0 12px rgba(34,212,124,0.2); }
+.terr-high-mastery:hover { box-shadow: 0 0 20px rgba(34,212,124,0.3); }
+
+.terr-decayed { border-color: var(--orange); }
+.terr-decayed .terr-icon { stroke: var(--orange); }
+.terr-decayed:hover { border-color: var(--orange); box-shadow: 0 4px 20px rgba(251,146,60,0.15); }
+
+.terr-locked { opacity: 0.4; cursor: not-allowed; }
+.terr-locked .terr-icon { stroke: var(--text-muted); }
+
+/* ═══════════════════════════════════════════════════════════
+   BOSS BATTLE VIEW
+   ═══════════════════════════════════════════════════════════ */
+
+.anki-battle-view {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 700px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* ── Battle Header ───────────────────────────────────────── */
+.anki-battle-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.anki-back-btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 13px;
+  font-family: var(--font-sans);
+  transition: all 0.2s;
+}
+.anki-back-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+/* ── Mode Toggle ─────────────────────────────────────────── */
+.anki-mode-toggle {
+  display: flex;
+  background: var(--bg-base);
+  border-radius: var(--radius-sm);
+  padding: 3px;
+  gap: 3px;
+}
+
+.anki-mode-btn {
+  flex: 1;
+  padding: 7px 14px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: var(--font-sans);
+}
+
+.anki-mode-btn.active {
+  background: var(--accent);
+  color: #0f1117;
+}
+
+.anki-mode-btn:not(.active):hover {
+  color: var(--text-primary);
+  background: var(--bg-elevated);
+}
+
+.anki-battle-title {
+  flex: 1;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.anki-streak-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: var(--yellow-dim);
+  color: var(--yellow);
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 12px;
+}
+
+.anki-combo {
+  background: var(--yellow);
+  color: #0f1117;
+  padding: 1px 6px;
+  border-radius: 8px;
+  font-size: 11px;
+  margin-left: 4px;
+}
+
+/* ── Boss HP Bar ─────────────────────────────────────────── */
+.anki-boss-bar-wrap {
+  padding: 12px 16px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.anki-boss-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.anki-boss-bar {
+  height: 12px;
+  background: var(--bg-base);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.anki-boss-hp {
+  height: 100%;
+  background: linear-gradient(90deg, var(--red), #ff4444);
+  border-radius: 6px;
+  transition: width 0.4s ease;
+}
+
+/* ── Player Status ───────────────────────────────────────── */
+.anki-player-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.anki-lives {
+  display: flex;
+  gap: 6px;
+  font-size: 20px;
+}
+
+.anki-heart.alive { color: var(--red); }
+.anki-heart.dead { color: var(--text-muted); opacity: 0.4; }
+
+.anki-session-xp {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+/* ── Flashcard ───────────────────────────────────────────── */
+.anki-card-wrap {
+  perspective: 1200px;
+  height: 320px;
+  cursor: pointer;
+  outline: none;
+}
+
+.anki-card {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.5s ease;
+}
+
+.anki-card.flipped { transform: rotateY(180deg); }
+
+.anki-card-front,
+.anki-card-back {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.anki-card-front {
+  background: var(--bg-card);
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 16px;
+}
+
+.anki-card-back {
+  background: var(--bg-elevated);
+  transform: rotateY(180deg);
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 12px;
+}
+
+.anki-card-type-badge {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 10px;
+}
+
+.badge-basic { background: var(--accent-dim); color: var(--accent); }
+.badge-cloze { background: var(--yellow-dim); color: var(--yellow); }
+
+.anki-card-badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.anki-mastery-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--mastery-color);
+  padding: 3px 10px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--mastery-color);
+  text-shadow: 0 0 6px var(--mastery-color);
+}
+
+.mastery-dots {
+  font-size: 8px;
+  letter-spacing: 2px;
+}
+
+.mastery-due-tag {
+  font-size: 8px;
+  background: var(--red);
+  color: #fff;
+  padding: 1px 6px;
+  border-radius: 6px;
+  margin-left: 2px;
+  animation: pulse-due 2s ease-in-out infinite;
+  text-shadow: none;
+}
+
+.anki-card-question {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.5;
+  max-width: 520px;
+}
+
+.anki-card-flip-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: auto;
+}
+
+.anki-card-answer-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.anki-card-answer {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--green);
+  line-height: 1.4;
+  max-width: 520px;
+}
+
+/* ── Hint ────────────────────────────────────────────────── */
+.anki-card-hint-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.anki-hint-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: var(--yellow-dim);
+  color: var(--yellow);
+  border: 1px solid rgba(251,191,36,0.25);
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: var(--font-sans);
+}
+
+.anki-hint-btn:hover {
+  background: rgba(251,191,36,0.2);
+  border-color: var(--yellow);
+}
+
+.anki-hint-text {
+  font-size: 13px;
+  color: var(--yellow);
+  background: var(--yellow-dim);
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  max-width: 400px;
+  display: none;
+}
+
+.anki-hint-text.visible { display: block; }
+
+/* ── Battle Actions ──────────────────────────────────────── */
+.anki-battle-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.anki-battle-actions.hidden { display: none; }
+
+.anki-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 28px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: var(--font-sans);
+}
+
+.anki-btn-wrong {
+  background: rgba(248,113,113,0.15);
+  color: var(--red);
+  border: 1px solid rgba(248,113,113,0.3);
+}
+.anki-btn-wrong:hover { background: rgba(248,113,113,0.25); }
+
+.anki-btn-right {
+  background: rgba(34,212,124,0.15);
+  color: var(--green);
+  border: 1px solid rgba(34,212,124,0.3);
+}
+.anki-btn-right:hover { background: rgba(34,212,124,0.25); }
+
+/* ═══════════════════════════════════════════════════════════
+   VICTORY / DEFEAT SCREENS
+   ═══════════════════════════════════════════════════════════ */
+
+.anki-result-view {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 40px 20px;
+  max-width: 500px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.anki-result-icon svg {
+  filter: drop-shadow(0 0 20px currentColor);
+}
+
+.anki-victory .anki-result-icon svg { filter: drop-shadow(0 0 20px var(--green)); }
+.anki-defeat .anki-result-icon svg { filter: drop-shadow(0 0 20px var(--red)); }
+
+.anki-result-title {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.anki-victory .anki-result-title { color: var(--green); }
+.anki-defeat .anki-result-title { color: var(--red); }
+
+.anki-result-subtitle {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.anki-result-stats {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.anki-result-stat {
+  text-align: center;
+  padding: 12px 16px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  min-width: 90px;
+}
+
+.anki-result-stat-val {
+  display: block;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.anki-result-stat-lbl {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 2px;
+}
+
+.anki-result-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MULTIPLE CHOICE MODE
+   ═══════════════════════════════════════════════════════════ */
+
+.anki-mc-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  text-align: center;
+}
+
+.anki-mc-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  max-width: 520px;
+  margin-top: 8px;
+}
+
+.anki-mc-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+  font-family: var(--font-sans);
+}
+
+.anki-mc-option:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: rgba(0,194,255,0.05);
+}
+
+.anki-mc-letter {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--bg-base);
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.anki-mc-option.correct {
+  border-color: var(--green);
+  background: rgba(34,212,124,0.12);
+}
+.anki-mc-option.correct .anki-mc-letter {
+  background: var(--green);
+  color: #0f1117;
+}
+
+.anki-mc-option.wrong {
+  border-color: var(--red);
+  background: rgba(248,113,113,0.12);
+}
+.anki-mc-option.wrong .anki-mc-letter {
+  background: var(--red);
+  color: #fff;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   EXPLAIN PANEL & POST-ANSWER
+   ═══════════════════════════════════════════════════════════ */
+
+.anki-post-answer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.anki-post-answer.hidden { display: none; }
+
+.anki-explain-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  background: rgba(0,194,255,0.1);
+  color: var(--accent);
+  border: 1px solid rgba(0,194,255,0.25);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: var(--font-sans);
+}
+
+.anki-explain-btn:hover {
+  background: rgba(0,194,255,0.2);
+  border-color: var(--accent);
+}
+
+.anki-explain-panel {
+  padding: 16px 20px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  border-left: 3px solid var(--accent);
+}
+
+.anki-explain-panel.hidden { display: none; }
+
+.anki-explain-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.anki-explain-text {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+  .anki-hud {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .anki-hud-right {
+    width: 100%;
+    justify-content: space-around;
+  }
+
+  .anki-territory-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 8px;
+  }
+
+  .territory-tile { padding: 12px; }
+  .terr-name { font-size: 12px; }
+
+  .anki-card-wrap { height: 280px; }
+
+  .anki-battle-actions {
+    flex-direction: column;
+  }
+
+  .anki-action-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .anki-map-actions {
+    flex-direction: column;
+  }
+}

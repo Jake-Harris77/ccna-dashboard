@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CCNA Network Engineer Dashboard</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/quiz.css" />
+  <link rel="stylesheet" href="css/acl.css" />
+  <link rel="stylesheet" href="css/subnet.css" />
+  <link rel="stylesheet" href="css/anki.css" />
+</head>
+<body>
+
+  <!-- ── Sidebar ─────────────────────────────────────────── -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="2" y="3" width="20" height="14" rx="2"/>
+        <path d="M8 21h8M12 17v4"/>
+        <circle cx="7" cy="10" r="1" fill="currentColor"/>
+        <circle cx="12" cy="10" r="1" fill="currentColor"/>
+        <circle cx="17" cy="10" r="1" fill="currentColor"/>
+      </svg>
+      <span class="logo-text">NetDash</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Tools</div>
+
+      <a href="#" class="nav-item active" data-tool="ios-reference">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 7h16M4 12h16M4 17h10"/>
+        </svg>
+        <span>IOS Command Ref</span>
+      </a>
+
+      <!-- Placeholder items for future tools -->
+      <a href="#" class="nav-item" data-tool="subnet-calc">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2"/>
+          <path d="M9 9h6M9 12h6M9 15h4"/>
+        </svg>
+        <span>Subnet Calculator</span>
+      </a>
+
+      <a href="#" class="nav-item" data-tool="acl-builder">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+        <span>ACL Builder</span>
+      </a>
+
+      <a href="#" class="nav-item disabled" data-tool="topology" title="Coming soon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/>
+          <path d="M12 7v4M10 15l-3 2M14 15l3 2"/>
+        </svg>
+        <span>Topology Notes</span>
+        <span class="badge-soon">Soon</span>
+      </a>
+
+      <div class="nav-section-label" style="margin-top:24px;">Study</div>
+
+      <a href="#" class="nav-item" data-tool="study" data-mode="flashcard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+        </svg>
+        <span>Flashcards</span>
+      </a>
+
+      <a href="#" class="nav-item" data-tool="study" data-mode="quiz">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
+        <span>Quiz Mode</span>
+      </a>
+
+      <a href="#" class="nav-item" data-tool="anki">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+        </svg>
+        <span>ANKI</span>
+        <span class="badge-soon" style="background:var(--green-dim);color:var(--green)">Game</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <span>CCNA Dashboard v1.0</span>
+    </div>
+  </aside>
+
+  <!-- ── Main Content ───────────────────────────────────── -->
+  <main class="main-content">
+
+    <!-- Top bar -->
+    <header class="topbar">
+      <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M3 6h18M3 12h18M3 18h18"/>
+        </svg>
+      </button>
+      <h1 class="topbar-title">IOS Command Reference</h1>
+      <div class="topbar-meta">
+        <span class="stat-chip" id="statTotal">— commands</span>
+      </div>
+    </header>
+
+    <!-- Tool: IOS Reference -->
+    <section class="tool-panel" id="tool-ios-reference">
+
+      <!-- Search bar -->
+      <div class="search-wrapper">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+        </svg>
+        <input
+          type="text"
+          id="searchInput"
+          class="search-input"
+          placeholder='Search commands or concepts… e.g. "OSPF neighbor", "trunk", "show interface"'
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <button class="search-clear" id="searchClear" title="Clear search">&#x2715;</button>
+      </div>
+
+      <!-- Category filters -->
+      <div class="filter-bar" id="filterBar">
+        <button class="filter-btn active" data-cat="all">All</button>
+        <button class="filter-btn" data-cat="interface">Interfaces</button>
+        <button class="filter-btn" data-cat="routing">Routing</button>
+        <button class="filter-btn" data-cat="ospf">OSPF</button>
+        <button class="filter-btn" data-cat="eigrp">EIGRP</button>
+        <button class="filter-btn" data-cat="rip">RIP</button>
+        <button class="filter-btn" data-cat="bgp">BGP</button>
+        <button class="filter-btn" data-cat="switching">Switching</button>
+        <button class="filter-btn" data-cat="vlan">VLANs</button>
+        <button class="filter-btn" data-cat="stp">STP</button>
+        <button class="filter-btn" data-cat="ipv6">IPv6</button>
+        <button class="filter-btn" data-cat="dhcp">DHCP</button>
+        <button class="filter-btn" data-cat="fhrp">HSRP/FHRP</button>
+        <button class="filter-btn" data-cat="etherchannel">EtherChannel</button>
+        <button class="filter-btn" data-cat="wan">WAN/GRE</button>
+        <button class="filter-btn" data-cat="security">Security</button>
+        <button class="filter-btn" data-cat="nat">NAT</button>
+        <button class="filter-btn" data-cat="system">System</button>
+        <button class="filter-btn" data-cat="troubleshoot">Troubleshoot</button>
+      </div>
+
+      <!-- Results count -->
+      <div class="results-meta" id="resultsMeta"></div>
+
+      <!-- Command cards grid -->
+      <div class="cards-grid" id="cardsGrid">
+        <!-- Populated by app.js -->
+      </div>
+
+      <!-- Empty state -->
+      <div class="empty-state" id="emptyState" style="display:none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+          <path d="M8 11h6M11 8v6" stroke-dasharray="2 1"/>
+        </svg>
+        <p>No commands found for <strong id="emptyTerm"></strong></p>
+        <span>Try a different keyword or browse by category.</span>
+      </div>
+
+    </section>
+
+    <!-- Tool: Study (Flashcards + Quiz) -->
+    <section class="tool-panel" id="tool-study">
+      <!-- Populated by quiz.js -->
+    </section>
+
+    <!-- Tool: ACL Builder & Explainer -->
+    <section class="tool-panel" id="tool-acl-builder">
+      <!-- Populated by acl.js -->
+    </section>
+
+    <!-- Tool: Subnet Calculator -->
+    <section class="tool-panel" id="tool-subnet-calc">
+      <!-- Populated by subnet.js -->
+    </section>
+
+    <!-- Tool: ANKI Game -->
+    <section class="tool-panel" id="tool-anki">
+      <!-- Populated by anki.js -->
+    </section>
+
+  </main>
+
+  <!-- ── Command Detail Modal ───────────────────────────── -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal" id="modal" role="dialog" aria-modal="true">
+      <button class="modal-close" id="modalClose" aria-label="Close">&times;</button>
+      <div class="modal-body" id="modalBody">
+        <!-- Populated by app.js -->
+      </div>
+    </div>
+  </div>
+
+  <script src="js/commands-data.js"></script>
+  <script src="js/quiz-data.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/quiz.js"></script>
+  <script src="js/acl.js"></script>
+  <script src="js/subnet.js"></script>
+  <script src="js/anki-data.js"></script>
+  <script src="js/anki.js"></script>
+</body>
+</html>
