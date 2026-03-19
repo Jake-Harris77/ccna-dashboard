@@ -31,6 +31,7 @@
 
   function saveStats (stats) {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(stats)); } catch (_) {}
+    if (typeof FirebaseSync !== 'undefined') FirebaseSync.saveQuiz();
   }
 
   function recordResult (qId, correct) {

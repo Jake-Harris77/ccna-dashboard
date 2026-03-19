@@ -54,6 +54,7 @@
 
   function saveGame (g) {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(g)); } catch (_) {}
+    if (typeof FirebaseSync !== 'undefined') FirebaseSync.saveAnki();
   }
 
   // ── Mastery helpers ─────────────────────────────────────
