@@ -76,7 +76,7 @@
 }
 
 .loading-tamko-logo {
-  width: 200px;
+  width: 280px;
   height: auto;
   position: relative;
   z-index: 2;
@@ -99,8 +99,8 @@
 /* Spinning glow ring behind logo */
 .tamko-glow-ring {
   position: absolute;
-  width: 260px;
-  height: 260px;
+  width: 340px;
+  height: 340px;
   border-radius: 50%;
   background: conic-gradient(
     from 0deg,
@@ -193,6 +193,106 @@
 @keyframes barFill {
   0% { width: 0%; }
   100% { width: 100%; }
+}
+
+
+/* ── Bottom Fire / Light Effect ───────────────────────── */
+.loading-fire-glow {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 45%;
+  background: radial-gradient(ellipse 120% 60% at 50% 100%,
+    rgba(225, 26, 44, 0.35) 0%,
+    rgba(225, 26, 44, 0.15) 30%,
+    rgba(251, 146, 60, 0.08) 50%,
+    transparent 70%
+  );
+  pointer-events: none;
+  animation: fireGlowPulse 2s ease-in-out infinite, ringFadeIn 2s ease 0.5s forwards;
+  opacity: 0;
+  z-index: 0;
+}
+
+@keyframes fireGlowPulse {
+  0%, 100% {
+    transform: scaleY(1);
+    filter: brightness(1);
+  }
+  50% {
+    transform: scaleY(1.15);
+    filter: brightness(1.3);
+  }
+}
+
+/* Fire ember particles rising from bottom */
+.loading-ember {
+  position: absolute;
+  bottom: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: emberRise linear infinite;
+  z-index: 1;
+}
+
+@keyframes emberRise {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 0;
+  }
+  5% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(-50vh) scale(0);
+    opacity: 0;
+  }
+}
+
+/* Bottom light bar */
+.loading-fire-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(225, 26, 44, 0.3) 15%,
+    rgba(251, 146, 60, 0.6) 35%,
+    #e11a2c 50%,
+    rgba(251, 146, 60, 0.6) 65%,
+    rgba(225, 26, 44, 0.3) 85%,
+    transparent 100%
+  );
+  box-shadow: 0 0 20px rgba(225, 26, 44, 0.5),
+              0 0 60px rgba(225, 26, 44, 0.2),
+              0 -10px 40px rgba(251, 146, 60, 0.15);
+  animation: fireBarFlicker 1.5s ease-in-out infinite, ringFadeIn 1s ease 0.3s forwards;
+  opacity: 0;
+  z-index: 1;
+}
+
+@keyframes fireBarFlicker {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(225, 26, 44, 0.5),
+                0 0 60px rgba(225, 26, 44, 0.2),
+                0 -10px 40px rgba(251, 146, 60, 0.15);
+  }
+  33% {
+    box-shadow: 0 0 30px rgba(225, 26, 44, 0.7),
+                0 0 80px rgba(225, 26, 44, 0.3),
+                0 -15px 50px rgba(251, 146, 60, 0.25);
+  }
+  66% {
+    box-shadow: 0 0 25px rgba(225, 26, 44, 0.6),
+                0 0 70px rgba(225, 26, 44, 0.25),
+                0 -12px 45px rgba(251, 146, 60, 0.2);
+  }
 }
 
 

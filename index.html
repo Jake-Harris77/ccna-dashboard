@@ -18,6 +18,10 @@
   <div class="loading-screen" id="loadingScreen">
     <!-- Animated background particles -->
     <div class="loading-particles" id="loadingParticles"></div>
+    <!-- Bottom fire glow -->
+    <div class="loading-fire-glow"></div>
+    <div class="loading-fire-bar"></div>
+    <div class="loading-embers" id="loadingEmbers"></div>
 
     <!-- TAMKO logo hero -->
     <div class="loading-tamko-wrap">
@@ -39,7 +43,7 @@
     <div class="loading-bar"><div class="loading-bar-fill"></div></div>
   </div>
   <script>
-  // Spawn floating particles for loading screen
+  // Spawn floating particles and fire embers for loading screen
   (function(){
     var c = document.getElementById('loadingParticles');
     if (!c) return;
@@ -56,6 +60,24 @@
       p.style.animationDelay = (Math.random() * 5) + 's';
       p.style.boxShadow = '0 0 ' + (size * 2) + 'px ' + p.style.background;
       c.appendChild(p);
+    }
+    // Fire embers rising from bottom
+    var e = document.getElementById('loadingEmbers');
+    if (!e) return;
+    var fireColors = ['#e11a2c', '#fb923c', '#fbbf24', '#ff6b35', '#e11a2c'];
+    for (var j = 0; j < 40; j++) {
+      var em = document.createElement('div');
+      em.className = 'loading-ember';
+      var sz = 2 + Math.random() * 5;
+      em.style.width = sz + 'px';
+      em.style.height = sz + 'px';
+      em.style.left = (10 + Math.random() * 80) + '%';
+      var col = fireColors[Math.floor(Math.random() * fireColors.length)];
+      em.style.background = col;
+      em.style.boxShadow = '0 0 ' + (sz * 3) + 'px ' + col + ', 0 0 ' + (sz * 6) + 'px ' + col;
+      em.style.animationDuration = (2 + Math.random() * 3) + 's';
+      em.style.animationDelay = (Math.random() * 4) + 's';
+      e.appendChild(em);
     }
   })();
   </script>
