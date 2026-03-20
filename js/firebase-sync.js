@@ -200,6 +200,7 @@ var FirebaseSync = (function () {
             border: prof.border || 0,
             ownedBorders: prof.ownedBorders || [0, 1],
             ownedAvatars: prof.ownedAvatars || [],
+            currentSection: prof.currentSection || 0,
           };
         }
 

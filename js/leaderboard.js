@@ -78,11 +78,14 @@ var Leaderboard = (function () {
           }
         }
 
+        var sectionLabel = d.currentSection ? 'S' + d.currentSection : '—';
+
         rows += '<tr class="lb-row' + selfClass + '">'
           + '<td class="lb-rank' + rankClass + '">' + rank + '</td>'
           + '<td><div class="lb-user-cell">' + avatarHTML + '<span class="lb-name">' + esc(d.displayName || 'Anonymous') + '</span></div></td>'
           + '<td><span class="lb-level">Lv ' + (d.level || 1) + '</span></td>'
           + '<td class="lb-xp">' + formatNum(d.xp || 0) + ' XP</td>'
+          + '<td class="lb-stat">' + sectionLabel + '</td>'
           + '<td class="lb-stat">' + (d.sectionsConquered || 0) + ' conquered</td>'
           + '<td>' + actionHTML + '</td>'
           + '</tr>';

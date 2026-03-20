@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 //  NetReady — ANKI Game Engine
 //  Territory map, boss battles, flashcards with hints, XP/leveling, mastery
-//  Modes: Free Recall (flip card) + Brain Memory (multiple choice)
+//  Modes: Free Recall (flip card) + Multiple Choice (multiple choice)
 // ─────────────────────────────────────────────────────────────────────────────
 
 (function () {
@@ -135,6 +135,16 @@
   }
 
   // ── Section helpers ───────────────────────────────────────
+  function isSameDay (ts1, ts2) {
+    const d1 = new Date(ts1), d2 = new Date(ts2);
+    return d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate();
+  }
+
+  function wasBossBeatenToday (sid) {
+    const s = game.sections[sid];
+    return s && s.defeated && s.lastReview && isSameDay(s.lastReview, Date.now());
+  }
+
   function getSectionStatus (sid) {
     const s = game.sections[sid];
     if (!s) return 'locked';
@@ -228,8 +238,10 @@
       const mColor = masteryColor(masteryPct);
 
       const hasGuide = sec.studyGuide;
+      const beatenToday = wasBossBeatenToday(sec.id);
+      const todayClass = beatenToday ? ' terr-beaten-today' : '';
       return `
-        <button class="territory-tile terr-${status}${highMastery}" data-section="${sec.id}" title="${esc(sec.name)} (${sec.count} cards)" style="--mastery-ring: ${mColor}">
+        <button class="territory-tile terr-${status}${highMastery}${todayClass}" data-section="${sec.id}" title="${esc(sec.name)} (${sec.count} cards)" style="--mastery-ring: ${mColor}">
           <div class="terr-section-num">S${sec.id}</div>
           ${mInfo.dueCount > 0 ? `<div class="terr-due-badge">${mInfo.dueCount} due</div>` : ''}
           ${hasGuide ? `<div class="terr-study-btn" data-study="${sec.id}" title="Study Guide"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>` : ''}
@@ -377,6 +389,7 @@
     if (cards.length === 0) return;
     const secData = game.sections[sectionId];
 
+    // Reset boss HP for a new run, but preserve today's beaten status
     if (secData.defeated || secData.hp === 0) {
       secData.defeated = false;
       secData.hp = secData.maxHP;
@@ -531,7 +544,7 @@
         <!-- Mode Toggle -->
         <div class="anki-mode-toggle">
           <button class="anki-mode-btn ${modeRecallActive}" data-mode="recall">Free Recall</button>
-          <button class="anki-mode-btn ${modeMCActive}" data-mode="mc">Brain Memory</button>
+          <button class="anki-mode-btn ${modeMCActive}" data-mode="mc">Multiple Choice</button>
         </div>
 
         <div class="anki-boss-bar-wrap">

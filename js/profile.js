@@ -90,6 +90,7 @@ var Profile = (function () {
       border: 0,
       ownedBorders: [0, 1],
       ownedAvatars: Object.keys(AVATARS).filter(function (k) { return AVATARS[k].free; }),
+      currentSection: 0,
     };
   }
 
@@ -112,6 +113,7 @@ var Profile = (function () {
         border: p.border,
         ownedBorders: p.ownedBorders,
         ownedAvatars: p.ownedAvatars,
+        currentSection: p.currentSection || 0,
       }, { merge: true });
     } catch (err) {
       console.error('Profile sync error:', err);
@@ -135,6 +137,7 @@ var Profile = (function () {
         if (d.ownedAvatars) {
           local.ownedAvatars = arrayUnion(local.ownedAvatars, d.ownedAvatars);
         }
+        if (d.currentSection !== undefined) local.currentSection = d.currentSection;
         saveProfile(local);
         // Refresh topbar to reflect cloud avatar/border
         if (typeof window.updateTopbarAvatar === 'function') {
@@ -231,6 +234,13 @@ var Profile = (function () {
       + '    <div class="profile-stat-box"><span class="profile-stat-val">' + (g.bestStreak || 0) + '</span><span class="profile-stat-lbl">Best Streak</span></div>'
       + '    <div class="profile-stat-box"><span class="profile-stat-val">' + conquered + '</span><span class="profile-stat-lbl">Conquered</span></div>'
       + '  </div>'
+      + '  <div class="profile-section-dropdown" style="margin-top:16px;">'
+      + '    <label for="currentSectionSelect" class="profile-section-title" style="margin-bottom:8px;display:block;">Section I Am In</label>'
+      + '    <select id="currentSectionSelect" class="profile-section-select">'
+      + '      <option value="0"' + (p.currentSection === 0 ? ' selected' : '') + '>-- Not Set --</option>'
+      + (function(){ var opts=''; for(var i=1;i<=38;i++){ opts+='<option value="'+i+'"'+(p.currentSection===i?' selected':'')+'>Section '+i+'</option>'; } return opts; })()
+      + '    </select>'
+      + '  </div>'
       + '</div>'
       + '<div class="profile-card">'
       + '  <div class="profile-section-title">Choose Avatar</div>'
@@ -285,6 +295,16 @@ var Profile = (function () {
         window.updateTopbarAvatar();
       }
     });
+
+    // Bind section dropdown
+    var secSelect = document.getElementById('currentSectionSelect');
+    if (secSelect) {
+      secSelect.addEventListener('change', function () {
+        var profile = loadProfile();
+        profile.currentSection = parseInt(this.value, 10) || 0;
+        saveProfile(profile);
+      });
+    }
   }
 
   function esc (str) {

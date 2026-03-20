@@ -360,3 +360,154 @@
   border-right: 1px solid var(--border);
   border-image: linear-gradient(to bottom, rgba(225, 26, 44, 0.3) 0%, var(--border) 20%, var(--border) 80%, rgba(225, 26, 44, 0.3) 100%) 1;
 }
+
+/* ── Fire Theme — Sidebar ─────────────────────────────── */
+.sidebar {
+  background: linear-gradient(180deg, var(--bg-surface) 0%, var(--bg-surface) 85%, rgba(225, 26, 44, 0.06) 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.sidebar::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 120px;
+  background: radial-gradient(ellipse 150% 80% at 50% 100%,
+    rgba(225, 26, 44, 0.12) 0%,
+    rgba(251, 146, 60, 0.06) 40%,
+    transparent 70%
+  );
+  pointer-events: none;
+  animation: sidebarFirePulse 3s ease-in-out infinite;
+}
+
+@keyframes sidebarFirePulse {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+
+/* ── Fire Theme — Main Content Background ─────────────── */
+.main-content {
+  position: relative;
+  background: var(--bg-base);
+}
+
+.main-content::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 200px;
+  background: radial-gradient(ellipse 100% 80% at 50% 100%,
+    rgba(225, 26, 44, 0.08) 0%,
+    rgba(251, 146, 60, 0.04) 40%,
+    transparent 70%
+  );
+  pointer-events: none;
+  z-index: 0;
+  animation: mainFirePulse 4s ease-in-out infinite;
+}
+
+@keyframes mainFirePulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+/* ── Fire Theme — Territory Tiles ─────────────────────── */
+.territory-tile {
+  position: relative;
+  overflow: hidden;
+}
+
+.territory-tile::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: radial-gradient(ellipse 120% 100% at 50% 100%,
+    rgba(225, 26, 44, 0.08) 0%,
+    transparent 60%
+  );
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.territory-tile:hover::before {
+  opacity: 1;
+}
+
+/* Conquered tiles get a green fire glow instead */
+.terr-conquered::before {
+  background: radial-gradient(ellipse 120% 100% at 50% 100%,
+    rgba(34, 212, 124, 0.1) 0%,
+    transparent 60%
+  );
+}
+
+/* ── Fire Theme — Topbar subtle accent ────────────────── */
+.topbar {
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 1px 0 rgba(225, 26, 44, 0.08);
+}
+
+/* ── Ambient Fire Embers — Sidebar & Main Content ────── */
+.sidebar-embers,
+.main-embers {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.sidebar-embers { z-index: 0; }
+.main-embers { z-index: 0; }
+
+/* Make sure sidebar children sit above embers */
+.sidebar > *:not(.sidebar-embers) { position: relative; z-index: 1; }
+.main-content > *:not(.main-embers) { position: relative; z-index: 1; }
+
+.ambient-ember {
+  position: absolute;
+  bottom: -5px;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: ambientEmberRise linear infinite;
+}
+
+@keyframes ambientEmberRise {
+  0% {
+    transform: translateY(0) translateX(0) scale(1);
+    opacity: 0;
+  }
+  6% {
+    opacity: 0.85;
+  }
+  20% {
+    transform: translateY(-20vh) translateX(12px) scale(0.95);
+    opacity: 0.75;
+  }
+  40% {
+    transform: translateY(-40vh) translateX(-10px) scale(0.8);
+    opacity: 0.55;
+  }
+  60% {
+    transform: translateY(-60vh) translateX(8px) scale(0.6);
+    opacity: 0.35;
+  }
+  80% {
+    transform: translateY(-80vh) translateX(-5px) scale(0.35);
+    opacity: 0.15;
+  }
+  100% {
+    transform: translateY(-100vh) translateX(3px) scale(0.1);
+    opacity: 0;
+  }
+}

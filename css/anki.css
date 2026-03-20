@@ -297,6 +297,31 @@
 .terr-locked { opacity: 0.4; cursor: not-allowed; }
 .terr-locked .terr-icon { stroke: var(--text-muted); }
 
+/* Beaten today — stays green regardless of re-entering boss */
+.terr-beaten-today {
+  border-color: var(--green) !important;
+  background: rgba(34, 212, 124, 0.06) !important;
+  box-shadow: 0 0 12px rgba(34, 212, 124, 0.25), inset 0 0 20px rgba(34, 212, 124, 0.03) !important;
+}
+.terr-beaten-today .terr-icon { stroke: var(--green) !important; }
+.terr-beaten-today:hover {
+  box-shadow: 0 0 20px rgba(34, 212, 124, 0.35), inset 0 0 20px rgba(34, 212, 124, 0.05) !important;
+}
+.terr-beaten-today .terr-due-badge {
+  background: var(--green);
+  animation: none;
+}
+.terr-beaten-today::after {
+  content: '\u2713';
+  position: absolute;
+  top: 6px;
+  right: 28px;
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--green);
+  text-shadow: 0 0 6px rgba(34, 212, 124, 0.5);
+}
+
 /* ═══════════════════════════════════════════════════════════
    BOSS BATTLE VIEW
    ═══════════════════════════════════════════════════════════ */
@@ -915,8 +940,8 @@
 /* Study button on territory tiles */
 .terr-study-btn {
   position: absolute;
-  top: 8px;
-  left: 8px;
+  bottom: 8px;
+  right: 8px;
   width: 26px;
   height: 26px;
   display: flex;
