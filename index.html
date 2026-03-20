@@ -9,11 +9,24 @@
   <link rel="stylesheet" href="css/social.css" />
   <link rel="stylesheet" href="css/firebase-auth.css" />
   <link rel="stylesheet" href="css/gamification.css" />
+  <link rel="stylesheet" href="css/effects.css" />
+  <link rel="stylesheet" href="css/tamko-brand.css" />
 </head>
 <body>
 
   <!-- ── Loading Screen ──────────────────────────────────── -->
   <div class="loading-screen" id="loadingScreen">
+    <!-- Animated background particles -->
+    <div class="loading-particles" id="loadingParticles"></div>
+
+    <!-- TAMKO logo hero -->
+    <div class="loading-tamko-wrap">
+      <div class="tamko-glow-ring"></div>
+      <img src="img/tamko-logo.svg" alt="TAMKO" class="loading-tamko-logo" />
+    </div>
+
+    <div class="loading-presents">PRESENTS</div>
+
     <svg class="loading-logo" viewBox="0 0 210 55">
       <polyline points="0,28 22,28 34,10 46,46 58,28 210,28" fill="none" stroke="#00f0ff" stroke-width="2" opacity="0.4"/>
       <circle cx="58" cy="28" r="4" fill="#00f0ff" opacity="0.8"/>
@@ -25,6 +38,27 @@
     <div class="loading-subtitle">PATH TO CCNA CERTIFICATION</div>
     <div class="loading-bar"><div class="loading-bar-fill"></div></div>
   </div>
+  <script>
+  // Spawn floating particles for loading screen
+  (function(){
+    var c = document.getElementById('loadingParticles');
+    if (!c) return;
+    var colors = ['rgba(225,26,44,0.6)', 'rgba(0,194,255,0.4)', 'rgba(255,255,255,0.2)', 'rgba(225,26,44,0.3)'];
+    for (var i = 0; i < 30; i++) {
+      var p = document.createElement('div');
+      p.className = 'loading-particle';
+      var size = 2 + Math.random() * 4;
+      p.style.width = size + 'px';
+      p.style.height = size + 'px';
+      p.style.left = Math.random() * 100 + '%';
+      p.style.background = colors[Math.floor(Math.random() * colors.length)];
+      p.style.animationDuration = (6 + Math.random() * 8) + 's';
+      p.style.animationDelay = (Math.random() * 5) + 's';
+      p.style.boxShadow = '0 0 ' + (size * 2) + 'px ' + p.style.background;
+      c.appendChild(p);
+    }
+  })();
+  </script>
 
   <!-- ── Sidebar ─────────────────────────────────────────── -->
   <aside class="sidebar" id="sidebar">
@@ -95,6 +129,9 @@
     </nav>
 
     <div class="sidebar-footer">
+      <div class="sidebar-tamko">
+        <img src="img/tamko-logo-dark.svg" alt="TAMKO" class="sidebar-tamko-logo" />
+      </div>
       <span>NetReady v2.0</span>
     </div>
   </aside>
@@ -198,6 +235,10 @@
   <div class="login-overlay" id="loginOverlay">
     <div class="login-modal">
       <button class="login-modal-close" id="loginClose">&times;</button>
+      <div class="login-tamko-header">
+        <img src="img/tamko-logo.png" alt="TAMKO" class="login-tamko-logo" />
+        <div class="login-tamko-divider"></div>
+      </div>
       <h2>Sign In to NetReady</h2>
       <p class="login-subtitle">Sync your progress across devices and compete with friends</p>
 
@@ -231,6 +272,7 @@
   <!-- App scripts -->
   <script src="js/firebase-config.js"></script>
   <script src="js/anki-data.js"></script>
+  <script src="js/effects.js"></script>
   <script src="js/anki.js"></script>
   <script src="js/coins.js"></script>
   <script src="js/profile.js"></script>

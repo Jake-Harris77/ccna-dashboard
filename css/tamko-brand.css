@@ -1,0 +1,262 @@
+/* ─────────────────────────────────────────────────────────
+   TAMKO Branding — Animated Logo Integration
+   ───────────────────────────────────────────────────────── */
+
+/* ── Loading Screen Overhaul ─────────────────────────── */
+.loading-screen {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 30%, #1a0508 0%, #0f1117 60%, #080a0f 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  gap: 0;
+  transition: opacity 0.6s ease;
+  overflow: hidden;
+}
+
+/* Floating particle background */
+.loading-particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.loading-particle {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: particleFloat linear infinite;
+}
+
+@keyframes particleFloat {
+  0% {
+    transform: translateY(100vh) scale(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-10vh) scale(1);
+    opacity: 0;
+  }
+}
+
+/* TAMKO Logo Hero Section */
+.loading-tamko-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  animation: tamkoEntrance 1.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes tamkoEntrance {
+  0% {
+    opacity: 0;
+    transform: scale(0.6) rotateY(40deg);
+    filter: blur(10px);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.05) rotateY(-3deg);
+    filter: blur(0);
+  }
+  100% {
+    transform: scale(1) rotateY(0deg);
+  }
+}
+
+.loading-tamko-logo {
+  width: 200px;
+  height: auto;
+  position: relative;
+  z-index: 2;
+  filter: drop-shadow(0 0 20px rgba(225, 26, 44, 0.5))
+          drop-shadow(0 0 60px rgba(225, 26, 44, 0.2));
+  animation: tamkoBreath 3s ease-in-out infinite 1.2s;
+}
+
+@keyframes tamkoBreath {
+  0%, 100% {
+    filter: drop-shadow(0 0 20px rgba(225, 26, 44, 0.5))
+            drop-shadow(0 0 60px rgba(225, 26, 44, 0.2));
+  }
+  50% {
+    filter: drop-shadow(0 0 30px rgba(225, 26, 44, 0.7))
+            drop-shadow(0 0 80px rgba(225, 26, 44, 0.35));
+  }
+}
+
+/* Spinning glow ring behind logo */
+.tamko-glow-ring {
+  position: absolute;
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0%,
+    rgba(225, 26, 44, 0.3) 25%,
+    transparent 50%,
+    rgba(0, 194, 255, 0.2) 75%,
+    transparent 100%
+  );
+  animation: ringRotate 4s linear infinite;
+  z-index: 1;
+  opacity: 0;
+  animation: ringRotate 4s linear infinite, ringFadeIn 1.5s ease 0.8s forwards;
+}
+
+@keyframes ringRotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes ringFadeIn {
+  from { opacity: 0; }
+  to { opacity: 0.7; }
+}
+
+/* "PRESENTS" text */
+.loading-presents {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 6px;
+  color: rgba(225, 26, 44, 0.6);
+  text-transform: uppercase;
+  margin-bottom: 24px;
+  animation: presentsReveal 0.8s ease 1s both;
+}
+
+@keyframes presentsReveal {
+  0% {
+    opacity: 0;
+    letter-spacing: 20px;
+  }
+  100% {
+    opacity: 1;
+    letter-spacing: 6px;
+  }
+}
+
+/* NetReady logo delayed entrance */
+.loading-screen .loading-logo {
+  animation: netReadySlide 0.8s cubic-bezier(0.16, 1, 0.3, 1) 1.4s both;
+}
+
+@keyframes netReadySlide {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.loading-screen .loading-subtitle {
+  animation: netReadySlide 0.6s ease 1.8s both;
+}
+
+.loading-screen .loading-bar {
+  animation: netReadySlide 0.5s ease 2s both;
+}
+
+/* Red-tinted loading bar */
+.loading-bar {
+  width: 180px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  margin-top: 20px;
+  overflow: hidden;
+}
+
+.loading-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #e11a2c, #00c2ff);
+  border-radius: 3px;
+  animation: barFill 2.5s ease 2.2s forwards;
+}
+
+@keyframes barFill {
+  0% { width: 0%; }
+  100% { width: 100%; }
+}
+
+
+/* ── Login Modal TAMKO Header ────────────────────────── */
+.login-tamko-header {
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.login-tamko-logo {
+  width: 140px;
+  height: auto;
+  margin-bottom: 12px;
+  filter: drop-shadow(0 0 12px rgba(225, 26, 44, 0.3));
+  animation: loginLogoPulse 3s ease-in-out infinite;
+}
+
+@keyframes loginLogoPulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 12px rgba(225, 26, 44, 0.3));
+    transform: scale(1);
+  }
+  50% {
+    filter: drop-shadow(0 0 20px rgba(225, 26, 44, 0.5));
+    transform: scale(1.02);
+  }
+}
+
+.login-tamko-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(225, 26, 44, 0.4), transparent);
+  margin: 0 20px;
+}
+
+/* Enhanced login modal with subtle red accent */
+.login-modal {
+  border-top: 3px solid #e11a2c;
+  background: linear-gradient(180deg, rgba(225, 26, 44, 0.04) 0%, var(--bg-surface) 15%);
+}
+
+
+/* ── Sidebar TAMKO Branding ──────────────────────────── */
+.sidebar-tamko {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 6px;
+  padding: 4px 0;
+}
+
+.sidebar-tamko-logo {
+  width: 100px;
+  height: auto;
+  opacity: 0.35;
+  transition: opacity 0.3s, filter 0.3s;
+}
+
+.sidebar-tamko-logo:hover {
+  opacity: 0.7;
+  filter: drop-shadow(0 0 8px rgba(225, 26, 44, 0.3));
+}
+
+/* Subtle TAMKO red accent on sidebar border */
+.sidebar {
+  border-right: 1px solid var(--border);
+  border-image: linear-gradient(to bottom, rgba(225, 26, 44, 0.3) 0%, var(--border) 20%, var(--border) 80%, rgba(225, 26, 44, 0.3) 100%) 1;
+}

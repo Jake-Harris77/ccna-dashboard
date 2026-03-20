@@ -101,6 +101,24 @@
     loginError.classList.add('active');
   }
 
+  // ── Topbar avatar (game avatar + border) ─────────────────
+  function updateTopbarAvatar () {
+    if (typeof Profile === 'undefined') return;
+    var prof = Profile.loadProfile();
+    avatar.style.display = 'none';
+    avatarPlc.style.display = 'none';
+    var wrap = avatar.parentElement;
+    var existing = wrap.querySelector('.topbar-game-avatar');
+    if (existing) existing.remove();
+    var div = document.createElement('div');
+    div.className = 'topbar-game-avatar';
+    div.innerHTML = Profile.getAvatarWithBorder(prof.avatar, prof.border, 32);
+    wrap.insertBefore(div, avatar);
+  }
+
+  // Expose globally so profile page can refresh topbar on avatar change
+  window.updateTopbarAvatar = updateTopbarAvatar;
+
   // ── Auth state listener ───────────────────────────────────
   auth.onAuthStateChanged(function (user) {
     if (user) {
@@ -108,8 +126,13 @@
       signInBtn.style.display = 'none';
       userInfo.classList.add('active');
 
-      // Avatar
-      if (user.photoURL) {
+      // Avatar — use game avatar + border if available
+      updateTopbarAvatar();
+      if (avatar.parentElement.querySelector('.topbar-game-avatar')) {
+        // Game avatar inserted — hide photo & placeholder
+        avatar.style.display = 'none';
+        avatarPlc.style.display = 'none';
+      } else if (user.photoURL) {
         avatar.src = user.photoURL;
         avatar.style.display = 'block';
         avatarPlc.style.display = 'none';

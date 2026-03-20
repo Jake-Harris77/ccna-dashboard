@@ -55,8 +55,16 @@ var Leaderboard = (function () {
         var rankClass = rank <= 3 ? ' lb-rank-' + rank : '';
         var selfClass = isSelf ? ' lb-self' : '';
 
-        var avatarHTML = d.photoURL
-          ? '<img class="lb-avatar" src="' + esc(d.photoURL) + '" alt="">'
+        // Use local profile for self (always fresh), Firestore data for others
+        var avatarId = d.avatar;
+        var borderId = d.border;
+        if (isSelf && typeof Profile !== 'undefined') {
+          var selfProf = Profile.loadProfile();
+          avatarId = selfProf.avatar;
+          borderId = selfProf.border;
+        }
+        var avatarHTML = (typeof Profile !== 'undefined' && avatarId)
+          ? Profile.getAvatarWithBorder(avatarId, borderId, 32)
           : '<div class="lb-avatar-placeholder">' + (d.displayName || '?').charAt(0).toUpperCase() + '</div>';
 
         var actionHTML = '';

@@ -67,6 +67,14 @@
   font-weight: 700;
 }
 
+.topbar-game-avatar {
+  flex-shrink: 0;
+}
+
+.topbar-game-avatar .avatar-ring svg {
+  color: var(--accent);
+}
+
 .auth-user-name {
   font-size: 12px;
   font-weight: 600;

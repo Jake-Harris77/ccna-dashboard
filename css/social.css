@@ -119,6 +119,14 @@
   border: 2px solid var(--border);
 }
 
+.lb-user-cell .avatar-ring {
+  flex-shrink: 0;
+}
+
+.lb-user-cell .avatar-ring svg {
+  color: var(--accent);
+}
+
 .lb-avatar-placeholder {
   width: 32px;
   height: 32px;
@@ -253,6 +261,14 @@
   object-fit: cover;
   border: 2px solid var(--border);
   flex-shrink: 0;
+}
+
+.friend-card .avatar-ring {
+  flex-shrink: 0;
+}
+
+.friend-card .avatar-ring svg {
+  color: var(--accent);
 }
 
 .friend-avatar-placeholder {

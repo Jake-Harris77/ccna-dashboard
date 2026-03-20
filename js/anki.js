@@ -86,19 +86,35 @@
   }
 
   // ── Distractor generation for multiple choice ───────────
+  // Tiered matching: same tag+section → same tag → same section → any
   function getDistractors (card, count) {
-    const sameSection = ANKI_CARDS.filter(c => c.section === card.section && c.id !== card.id);
-    const others = ANKI_CARDS.filter(c => c.section !== card.section);
-    const pool = shuffleArray([...sameSection, ...others]);
-    const distractors = [];
     const correctNorm = card.back.toLowerCase().trim();
-    for (const c of pool) {
-      if (distractors.length >= count) break;
-      const norm = c.back.toLowerCase().trim();
-      if (norm !== correctNorm && !distractors.some(d => d.toLowerCase().trim() === norm)) {
-        distractors.push(c.back);
+    const distractors = [];
+    const seen = new Set([correctNorm]);
+
+    function addFromPool (pool) {
+      const shuffled = shuffleArray(pool);
+      for (const c of shuffled) {
+        if (distractors.length >= count) return;
+        const norm = c.back.toLowerCase().trim();
+        if (!seen.has(norm)) {
+          seen.add(norm);
+          distractors.push(c.back);
+        }
       }
     }
+
+    if (card.tag) {
+      // Tier 1: Same tag + same section (best distractors)
+      addFromPool(ANKI_CARDS.filter(c => c.tag === card.tag && c.section === card.section && c.id !== card.id));
+      // Tier 2: Same tag, any section
+      addFromPool(ANKI_CARDS.filter(c => c.tag === card.tag && c.id !== card.id));
+    }
+    // Tier 3: Same section
+    addFromPool(ANKI_CARDS.filter(c => c.section === card.section && c.id !== card.id));
+    // Tier 4: Any card (fallback)
+    addFromPool(ANKI_CARDS.filter(c => c.id !== card.id));
+
     return distractors;
   }
 
@@ -211,10 +227,12 @@
 
       const mColor = masteryColor(masteryPct);
 
+      const hasGuide = sec.studyGuide;
       return `
         <button class="territory-tile terr-${status}${highMastery}" data-section="${sec.id}" title="${esc(sec.name)} (${sec.count} cards)" style="--mastery-ring: ${mColor}">
           <div class="terr-section-num">S${sec.id}</div>
           ${mInfo.dueCount > 0 ? `<div class="terr-due-badge">${mInfo.dueCount} due</div>` : ''}
+          ${hasGuide ? `<div class="terr-study-btn" data-study="${sec.id}" title="Study Guide"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>` : ''}
           <div class="terr-status-icon">${statusIcon}</div>
           <div class="terr-name">${esc(sec.name)}</div>
           <div class="terr-card-count">${sec.count} cards</div>
@@ -258,10 +276,96 @@
 
     el('ankiQuickPlay').addEventListener('click', startQuickPlay);
     el('ankiTerritoryGrid').addEventListener('click', e => {
+      // Study guide button
+      const studyBtn = e.target.closest('.terr-study-btn');
+      if (studyBtn) {
+        e.stopPropagation();
+        renderStudyGuide(studyBtn.dataset.study);
+        return;
+      }
       const tile = e.target.closest('.territory-tile');
       if (!tile) return;
       startBossBattle(tile.dataset.section);
     });
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  STUDY GUIDE
+  // ═══════════════════════════════════════════════════════════
+
+  function renderStudyGuide (sectionId) {
+    const sec = ANKI_SECTIONS.find(s => s.id === sectionId);
+    if (!sec || !sec.studyGuide) return;
+    const guide = sec.studyGuide;
+    const panel = el('tool-anki');
+
+    let html = '<div class="anki-study-view">';
+    html += '<div class="anki-study-header">';
+    html += '<button class="anki-back-btn" id="ankiStudyBack">\u2190 Map</button>';
+    html += '<h2 class="anki-study-title">' + esc(sec.name) + '</h2>';
+    html += '</div>';
+
+    // Overview
+    if (guide.overview) {
+      html += '<div class="anki-study-section">';
+      html += '<p class="anki-study-overview">' + esc(guide.overview) + '</p>';
+      html += '</div>';
+    }
+
+    // Key Terms
+    if (guide.keyTerms && guide.keyTerms.length) {
+      html += '<div class="anki-study-section">';
+      html += '<h3 class="anki-study-heading">Key Terms</h3>';
+      html += '<div class="anki-study-terms">';
+      guide.keyTerms.forEach(function (t) {
+        html += '<div class="anki-study-term">';
+        html += '<span class="anki-study-term-name">' + esc(t.term) + '</span>';
+        html += '<span class="anki-study-term-def">' + esc(t.definition) + '</span>';
+        html += '</div>';
+      });
+      html += '</div></div>';
+    }
+
+    // Key Points
+    if (guide.keyPoints && guide.keyPoints.length) {
+      html += '<div class="anki-study-section">';
+      html += '<h3 class="anki-study-heading">Key Points</h3>';
+      html += '<ul class="anki-study-points">';
+      guide.keyPoints.forEach(function (p) {
+        html += '<li>' + esc(p) + '</li>';
+      });
+      html += '</ul></div>';
+    }
+
+    // Examples
+    if (guide.examples && guide.examples.length) {
+      html += '<div class="anki-study-section">';
+      html += '<h3 class="anki-study-heading">Examples</h3>';
+      guide.examples.forEach(function (ex) {
+        html += '<div class="anki-study-example">' + esc(ex) + '</div>';
+      });
+      html += '</div>';
+    }
+
+    // Tips
+    if (guide.tips && guide.tips.length) {
+      html += '<div class="anki-study-section">';
+      html += '<h3 class="anki-study-heading">Study Tips</h3>';
+      guide.tips.forEach(function (tip) {
+        html += '<div class="anki-study-tip">' + esc(tip) + '</div>';
+      });
+      html += '</div>';
+    }
+
+    // Start Quiz button
+    html += '<div class="anki-study-actions">';
+    html += '<button class="anki-btn anki-btn-accent" id="ankiStudyStart">Start Quiz \u2192</button>';
+    html += '</div>';
+    html += '</div>';
+
+    panel.innerHTML = html;
+    el('ankiStudyBack').addEventListener('click', renderMap);
+    el('ankiStudyStart').addEventListener('click', function () { startBossBattle(sectionId); });
   }
 
   // ═══════════════════════════════════════════════════════════
@@ -608,6 +712,23 @@
       if (levelAfter > levelBefore) {
         game.coins += 25;
         if (typeof CoinSystem !== 'undefined') CoinSystem.updateTopbar();
+        if (typeof Effects !== 'undefined') Effects.levelUp(levelAfter);
+      }
+
+      // Visual effects
+      if (typeof Effects !== 'undefined') {
+        Effects.correctFlash();
+        // Streak milestones
+        if (session.streak === 3 || session.streak === 5 || session.streak === 10) {
+          var streakEl = document.querySelector('.anki-streak-badge');
+          if (streakEl) Effects.streakFire(streakEl);
+        }
+        // Coin burst
+        var cardEl = document.querySelector('.anki-mc-card, .anki-card-wrap');
+        if (cardEl) {
+          var r = cardEl.getBoundingClientRect();
+          Effects.coinBurst(r.left + r.width / 2, r.top + r.height / 2);
+        }
       }
       const damage = Math.round((10 + speedBonus) * (session.hintLevel === 0 ? 1.5 : 1));
       session.bossHP = Math.max(0, session.bossHP - damage);
@@ -696,6 +817,11 @@
       </div>
     `;
     el('ankiVictoryMap').addEventListener('click', renderMap);
+
+    // Victory confetti
+    if (typeof Effects !== 'undefined') {
+      Effects.confetti({ count: 100, duration: 3000 });
+    }
 
     // Record challenge score if active
     if (typeof Challenges !== 'undefined' && Challenges.recordScore) {

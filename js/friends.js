@@ -122,8 +122,8 @@ var Friends = (function () {
   }
 
   function friendCard (profile, uid, actionsHTML, isOnline) {
-    var avatarHTML = profile.photoURL
-      ? '<img class="friend-avatar" src="' + esc(profile.photoURL) + '" alt="">'
+    var avatarHTML = (typeof Profile !== 'undefined' && profile.avatar)
+      ? Profile.getAvatarWithBorder(profile.avatar, profile.border, 36)
       : '<div class="friend-avatar-placeholder">' + (profile.displayName || '?').charAt(0).toUpperCase() + '</div>';
 
     return '<div class="friend-card">'

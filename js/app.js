@@ -43,9 +43,9 @@
     var loadingScreen = document.getElementById('loadingScreen');
     if (loadingScreen) {
       loadingScreen.classList.add('fade-out');
-      setTimeout(function () { loadingScreen.remove(); }, 600);
+      setTimeout(function () { loadingScreen.remove(); }, 800);
     }
-  }, 1500);
+  }, 4200);
 
   // ── Nav switching ────────────────────────────────────────
   navItems.forEach(function (item) {

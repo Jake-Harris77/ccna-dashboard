@@ -1,0 +1,186 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   NetReady — Visual Effects
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* Canvas overlay for confetti */
+.effects-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* ── Level-up overlay ──────────────────────────────────── */
+.effects-level-up {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 9998;
+  animation: levelUpIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.effects-level-up.fade-out {
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.effects-level-up-inner {
+  text-align: center;
+}
+
+.effects-level-up-label {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 4px;
+  color: var(--yellow, #fbbf24);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  animation: levelUpPulse 0.6s ease-in-out infinite alternate;
+}
+
+.effects-level-up-num {
+  font-size: 96px;
+  font-weight: 900;
+  color: var(--accent, #00c2ff);
+  text-shadow:
+    0 0 40px rgba(0, 194, 255, 0.6),
+    0 0 80px rgba(0, 194, 255, 0.3);
+  animation: levelUpBounce 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes levelUpIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes levelUpBounce {
+  from { transform: scale(0); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes levelUpPulse {
+  from { opacity: 0.7; }
+  to { opacity: 1; }
+}
+
+/* ── Streak fire sparks ────────────────────────────────── */
+.effects-spark {
+  position: fixed;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--yellow, #fbbf24);
+  box-shadow: 0 0 8px var(--yellow, #fbbf24);
+  pointer-events: none;
+  z-index: 9997;
+  animation: sparkRise 0.8s ease-out forwards;
+}
+
+@keyframes sparkRise {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--drift, 0px), -50px) scale(0.3);
+  }
+}
+
+/* ── Coin burst ────────────────────────────────────────── */
+.effects-coin {
+  position: fixed;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--yellow, #fbbf24);
+  color: #1a1a2e;
+  font-size: 11px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 9997;
+  animation: coinFly 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  box-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
+}
+
+@keyframes coinFly {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  80% {
+    opacity: 1;
+    transform: translate(var(--tx), var(--ty)) scale(0.8);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--tx), var(--ty)) scale(0.4);
+  }
+}
+
+/* ── Mastery sparkle ───────────────────────────────────── */
+.effects-mastery-spark {
+  position: fixed;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent, #00c2ff);
+  box-shadow: 0 0 6px var(--accent, #00c2ff);
+  pointer-events: none;
+  z-index: 9997;
+  animation: masterySpark 0.6s ease-out forwards;
+}
+
+@keyframes masterySpark {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--dx), var(--dy)) scale(0.2);
+  }
+}
+
+/* ── Correct answer flash ──────────────────────────────── */
+.effects-correct-flash {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse at center, rgba(34, 212, 124, 0.15) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 9996;
+  animation: correctFlash 0.6s ease-out forwards;
+}
+
+@keyframes correctFlash {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* ── Enhanced territory tile animations ────────────────── */
+.terr-high-mastery {
+  animation: conqueredGlow 3s ease-in-out infinite;
+}
+
+@keyframes conqueredGlow {
+  0%, 100% { box-shadow: 0 0 12px rgba(34, 212, 124, 0.15); }
+  50% { box-shadow: 0 0 24px rgba(34, 212, 124, 0.35); }
+}
+
+.terr-due-badge {
+  animation: duePulse 2s ease-in-out infinite;
+}
+
+@keyframes duePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
