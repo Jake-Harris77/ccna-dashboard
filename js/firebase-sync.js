@@ -211,6 +211,8 @@ var FirebaseSync = (function () {
           bestStreak:        anki.bestStreak || 0,
           coins:             anki.coins || 0,
           sectionsConquered: conquered,
+          achievements:      anki.achievements || [],
+          examCount:         (anki.examHistory || []).length,
           lastSeen:          firebase.firestore.FieldValue.serverTimestamp(),
         }, profileUpdate), { merge: true });
       }

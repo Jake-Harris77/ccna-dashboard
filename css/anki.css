@@ -482,7 +482,7 @@
   width: 100%;
   height: 100%;
   transform-style: preserve-3d;
-  transition: transform 0.5s ease;
+  transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .anki-card.flipped { transform: rotateY(180deg); }
@@ -1078,4 +1078,85 @@
   display: flex;
   justify-content: center;
   padding: 10px 0 20px;
+}
+
+/* ── Card Flip 3D Enhancements ───────────────────────────── */
+.anki-mc-option.correct {
+  animation: correctGlow 0.5s ease;
+}
+.anki-mc-option.wrong {
+  animation: wrongShake 0.4s ease;
+}
+
+@keyframes correctGlow {
+  0%   { box-shadow: 0 0 0 0 rgba(34,212,124,0.4); }
+  50%  { box-shadow: 0 0 20px 4px rgba(34,212,124,0.5); }
+  100% { box-shadow: 0 0 8px 1px rgba(34,212,124,0.2); }
+}
+
+@keyframes wrongShake {
+  0%, 100% { transform: translateX(0); }
+  20%      { transform: translateX(-6px); }
+  40%      { transform: translateX(6px); }
+  60%      { transform: translateX(-4px); }
+  80%      { transform: translateX(4px); }
+}
+
+/* ── Territory Tile Animations ───────────────────────────── */
+.terr-conquered .territory-tile,
+.territory-tile.terr-conquered {
+  animation: tileGlow 3s ease-in-out infinite;
+}
+
+@keyframes tileGlow {
+  0%, 100% { box-shadow: 0 0 8px color-mix(in srgb, var(--mastery-ring, transparent) 25%, transparent); }
+  50%      { box-shadow: 0 0 18px color-mix(in srgb, var(--mastery-ring, transparent) 50%, transparent); }
+}
+
+.territory-tile.terr-high-mastery::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: var(--radius);
+  background: linear-gradient(135deg, rgba(0,194,255,0.1), rgba(34,212,124,0.1));
+  pointer-events: none;
+  animation: highMasteryPulse 4s ease-in-out infinite;
+  z-index: 0;
+}
+
+@keyframes highMasteryPulse {
+  0%, 100% { opacity: 0.3; }
+  50%      { opacity: 0.7; }
+}
+
+/* ── Daily Challenge Banner ─────────────────────────────── */
+.daily-challenge-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, rgba(251,191,36,0.15), rgba(251,191,36,0.05));
+  border: 1px solid rgba(251,191,36,0.3);
+  border-radius: var(--radius);
+}
+.daily-challenge-banner .daily-icon { font-size: 20px; flex-shrink: 0; }
+.daily-challenge-banner .daily-info { flex: 1; }
+.daily-challenge-banner .daily-title { font-size: 13px; font-weight: 700; color: var(--yellow); }
+.daily-challenge-banner .daily-desc { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.daily-challenge-banner .daily-completed { font-size: 12px; color: var(--green); font-weight: 600; }
+
+/* ── Streak Indicator on Map ─────────────────────────────── */
+.anki-streak-indicator {
+  font-size: 12px;
+  font-weight: 700;
+  color: #fb923c;
+  padding: 2px 8px;
+  background: rgba(251,146,60,0.12);
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+/* ── Boss HP bar smooth transition ───────────────────────── */
+.anki-boss-hp {
+  transition: width 0.4s ease;
 }

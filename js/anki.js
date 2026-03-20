@@ -41,6 +41,11 @@
       sections: {}, cardStats: {},
       mode: 'recall',
       coins: 0,
+      streakCalendar: {},
+      achievements: [],
+      dailyChallenge: { date: null, completed: false, sectionId: null },
+      speedRoundBest: {},
+      examHistory: [],
     };
   }
 
@@ -255,8 +260,18 @@
       `;
     }).join('');
 
+    // Daily challenge banner
+    const dailyBannerHTML = (typeof DailyChallenge !== 'undefined' && DailyChallenge.renderBanner)
+      ? DailyChallenge.renderBanner() : '';
+
+    // Streak info
+    const streakCount = (typeof StreakCalendar !== 'undefined' && StreakCalendar.getStreak)
+      ? StreakCalendar.getStreak() : 0;
+    const streakHTML = streakCount > 0 ? `<div class="anki-streak-indicator">\uD83D\uDD25 ${streakCount}-day streak</div>` : '';
+
     panel.innerHTML = `
       <div class="anki-map-view">
+        ${dailyBannerHTML}
         <div class="anki-hud">
           <div class="anki-hud-left">
             <div class="anki-level-badge">Lv ${level}</div>
@@ -264,6 +279,7 @@
               <div class="anki-xp-bar"><div class="anki-xp-fill" style="width:${pct}%"></div></div>
               <span class="anki-xp-label">${game.xp} / ${nextLvlXP} XP</span>
             </div>
+            ${streakHTML}
           </div>
           <div class="anki-hud-right">
             <div class="anki-stat"><span class="anki-stat-val">${game.totalCorrect}</span><span class="anki-stat-lbl">Correct</span></div>
@@ -277,6 +293,10 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
             Quick Play (Random)
           </button>
+          <button class="anki-btn anki-btn-secondary" id="ankiWeakFocus">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+            Focus Weak Areas
+          </button>
           <div class="anki-conquest-bar-wrap">
             <div class="anki-conquest-bar"><div class="anki-conquest-fill" style="width:${conquestPct}%"></div></div>
             <span>${conquered} / ${totalSections} sections conquered</span>
@@ -287,6 +307,19 @@
     `;
 
     el('ankiQuickPlay').addEventListener('click', startQuickPlay);
+
+    // Weak Area Focus button
+    el('ankiWeakFocus').addEventListener('click', startWeakAreaBattle);
+
+    // Daily challenge click
+    var dailyBtn = document.getElementById('dailyChallengeBtn');
+    if (dailyBtn) {
+      dailyBtn.addEventListener('click', function () {
+        var secId = dailyBtn.dataset.section;
+        if (secId) startBossBattle(secId);
+      });
+    }
+
     el('ankiTerritoryGrid').addEventListener('click', e => {
       // Study guide button
       const studyBtn = e.target.closest('.terr-study-btn');
@@ -403,6 +436,35 @@
     session.lives = 3;
     session.bossMaxHP = secData.maxHP || cards.length * 10;
     session.bossHP = secData.hp !== undefined ? secData.hp : session.bossMaxHP;
+    session.streak = 0;
+    session.sessionXP = 0;
+    session.sessionCorrect = 0;
+    session.sessionWrong = 0;
+    session.hintsUsed = 0;
+    session.timerStart = Date.now();
+    renderBattle();
+  }
+
+  function startWeakAreaBattle () {
+    // Collect cards with mastery < 2 or more wrong than correct
+    const weakCards = ANKI_CARDS.filter(c => {
+      const cs = game.cardStats[c.id];
+      if (!cs) return true; // never studied = weak
+      return cs.mastery < 2 || (cs.wrong > cs.correct);
+    });
+
+    if (weakCards.length === 0) {
+      if (typeof Toast !== 'undefined') Toast.show('No weak areas — great job!', 'success');
+      return;
+    }
+
+    session.view = 'quickplay';
+    session.sectionId = null;
+    session.cards = shuffleArray(weakCards).slice(0, 20);
+    session.cardIndex = 0;
+    session.lives = 5;
+    session.bossMaxHP = session.cards.length * 10;
+    session.bossHP = session.bossMaxHP;
     session.streak = 0;
     session.sessionXP = 0;
     session.sessionCorrect = 0;
@@ -763,6 +825,16 @@
 
     saveGame(game);
 
+    // Record daily activity for streak calendar
+    if (typeof StreakCalendar !== 'undefined' && StreakCalendar.recordActivity) {
+      StreakCalendar.recordActivity(correct ? 1 : 0, correct ? 0 : 1, correct ? (10 + speedBonus) : 0);
+    }
+
+    // Check achievements
+    if (typeof Achievements !== 'undefined' && Achievements.check) {
+      Achievements.check({ elapsed: elapsed, streak: session.streak, correct: correct, sectionId: session.sectionId });
+    }
+
     // Update topbar stats after each answer
     if (typeof CoinSystem !== 'undefined') CoinSystem.updateTopbar();
 
@@ -839,6 +911,16 @@
     // Record challenge score if active
     if (typeof Challenges !== 'undefined' && Challenges.recordScore) {
       Challenges.recordScore(session.sessionCorrect, session.sessionWrong, Date.now() - session.timerStart);
+    }
+
+    // Check daily challenge completion
+    if (typeof DailyChallenge !== 'undefined' && DailyChallenge.checkCompletion) {
+      DailyChallenge.checkCompletion(session.sectionId, session.sessionCorrect, session.sessionWrong);
+    }
+
+    // Check achievements for boss victory
+    if (typeof Achievements !== 'undefined' && Achievements.check) {
+      Achievements.check({ bossDefeated: true, sectionId: session.sectionId, correct: true, streak: session.streak, elapsed: 0 });
     }
   }
 

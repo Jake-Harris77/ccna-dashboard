@@ -19,6 +19,13 @@
     'challenges':  'Challenges',
     'profile':     'Profile',
     'shop':        'Shop',
+    'speed':       'Speed Round',
+    'exam':        'Exam Simulator',
+    'scenarios':   'Scenarios',
+    'labs':        'Practice Labs',
+    'streak':      'Streak Calendar',
+    'duels':       'Live Duels',
+    'groups':      'Study Groups',
   };
 
   // ── Sidebar Toggle ───────────────────────────────────────
@@ -32,11 +39,10 @@
 
   // ── Card count is now shown via CoinSystem topbar ───────
 
-  // ── Init ANKI game on load ───────────────────────────────
+  // ── Init modules on load ─────────────────────────────────
   if (window.AnkiEngine) AnkiEngine.init();
-
-  // ── Init Coin System topbar ─────────────────────────────
   if (window.CoinSystem) CoinSystem.init();
+  if (window.Theme) Theme.init();
 
   // ── Loading screen fade-out ─────────────────────────────
   setTimeout(function () {
@@ -75,12 +81,19 @@
       sidebar.classList.remove('mobile-open');
 
       // Init panels
-      if (tool === 'anki' && window.AnkiEngine)      AnkiEngine.init();
+      if (tool === 'anki' && window.AnkiEngine)          AnkiEngine.init();
       if (tool === 'leaderboard' && window.Leaderboard) Leaderboard.init();
-      if (tool === 'friends' && window.Friends)        Friends.init();
-      if (tool === 'challenges' && window.Challenges)  Challenges.init();
-      if (tool === 'profile' && window.Profile)        Profile.init();
-      if (tool === 'shop' && window.Shop)              Shop.init();
+      if (tool === 'friends' && window.Friends)          Friends.init();
+      if (tool === 'challenges' && window.Challenges)    Challenges.init();
+      if (tool === 'profile' && window.Profile)          Profile.init();
+      if (tool === 'shop' && window.Shop)                Shop.init();
+      if (tool === 'speed' && window.SpeedRound)         SpeedRound.init();
+      if (tool === 'exam' && window.ExamSimulator)       ExamSimulator.init();
+      if (tool === 'scenarios' && window.Scenarios)      Scenarios.init();
+      if (tool === 'labs' && window.PracticeLabs)        PracticeLabs.init();
+      if (tool === 'streak' && window.StreakCalendar)    StreakCalendar.init();
+      if (tool === 'duels' && window.Duels)              Duels.init();
+      if (tool === 'groups' && window.StudyGroups)       StudyGroups.init();
     });
   });
 
