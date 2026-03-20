@@ -1,0 +1,71 @@
+/* ─────────────────────────────────────────────────────────
+   NetReady — Live Duels
+   ───────────────────────────────────────────────────────── */
+
+#tool-duels { display: none; }
+#tool-duels.active { display: flex; }
+
+.duel-view, .duel-waiting, .duel-battle, .duel-results {
+  display: flex; flex-direction: column; gap: 20px; max-width: 700px; margin: 0 auto; width: 100%;
+}
+
+.duel-title { font-size: 22px; font-weight: 700; color: var(--text-primary); margin: 0; }
+
+.duel-create { display: flex; gap: 12px; align-items: center; }
+.duel-select {
+  flex: 1; padding: 10px 14px;
+  background: var(--bg-elevated); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); color: var(--text-primary);
+  font-size: 14px; font-family: var(--font-sans);
+}
+
+.duel-section { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 20px; }
+.duel-section h3 { font-size: 13px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 12px; }
+
+.duel-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; color: var(--text-primary); }
+.duel-item:last-child { border-bottom: none; }
+.duel-status-badge { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--yellow); }
+.duel-empty { color: var(--text-muted); font-size: 13px; margin: 0; }
+
+.duel-signin-msg { text-align: center; padding: 40px; color: var(--text-secondary); }
+
+/* Waiting */
+.duel-waiting { align-items: center; padding-top: 60px; text-align: center; }
+.duel-waiting h2 { color: var(--text-primary); margin: 0; }
+.duel-loader {
+  width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: var(--accent);
+  border-radius: 50%; animation: spin 1s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Battle */
+.duel-battle-header { display: flex; justify-content: space-between; font-size: 14px; color: var(--text-secondary); font-weight: 600; }
+.duel-card { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; text-align: center; }
+.duel-question { font-size: 16px; font-weight: 600; color: var(--text-primary); margin: 0 0 16px; line-height: 1.5; }
+.duel-options { display: flex; flex-direction: column; gap: 8px; }
+.duel-option {
+  display: flex; align-items: center; gap: 12px; padding: 12px 16px;
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  color: var(--text-primary); font-size: 14px; cursor: pointer; transition: all 0.15s; text-align: left; font-family: var(--font-sans);
+}
+.duel-option:hover { border-color: var(--accent); }
+.duel-letter {
+  width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+  border-radius: 50%; background: var(--bg-base); font-weight: 700; font-size: 12px; color: var(--text-muted); flex-shrink: 0;
+}
+.duel-option.correct { border-color: var(--green); background: rgba(34,212,124,0.12); }
+.duel-option.correct .duel-letter { background: var(--green); color: #0f1117; }
+.duel-option.wrong { border-color: var(--red); background: rgba(248,113,113,0.12); }
+.duel-option.wrong .duel-letter { background: var(--red); color: #fff; }
+
+/* Results */
+.duel-results { align-items: center; padding-top: 40px; text-align: center; }
+.duel-results h2 { font-size: 28px; font-weight: 800; margin: 0; }
+.duel-results-compare { display: flex; align-items: center; gap: 24px; }
+.duel-results-player {
+  padding: 20px; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius); min-width: 140px;
+}
+.duel-results-name { font-size: 13px; color: var(--text-muted); margin-bottom: 8px; }
+.duel-results-score { font-size: 28px; font-weight: 800; color: var(--accent); }
+.duel-results-time { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+.duel-vs { font-size: 20px; font-weight: 800; color: var(--text-muted); }
