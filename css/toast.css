@@ -1,0 +1,57 @@
+/* ─────────────────────────────────────────────────────────
+   NetReady — Toast Notifications
+   ───────────────────────────────────────────────────────── */
+
+.toast-container {
+  position: fixed;
+  top: 72px;
+  right: 20px;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  border-radius: var(--radius-sm, 6px);
+  background: var(--bg-elevated, #1e2330);
+  border: 1px solid var(--border, #2a3044);
+  color: var(--text-primary, #e4e8f0);
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  pointer-events: all;
+  transform: translateX(120%);
+  opacity: 0;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+  max-width: 360px;
+}
+
+.toast-visible {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.toast-exit {
+  transform: translateX(120%);
+  opacity: 0;
+}
+
+.toast-icon { display: flex; align-items: center; flex-shrink: 0; }
+
+.toast-success { border-color: var(--green, #22d47c); }
+.toast-success .toast-icon { color: var(--green, #22d47c); }
+
+.toast-error { border-color: var(--red, #f87171); }
+.toast-error .toast-icon { color: var(--red, #f87171); }
+
+.toast-warning { border-color: var(--yellow, #fbbf24); }
+.toast-warning .toast-icon { color: var(--yellow, #fbbf24); }
+
+.toast-info { border-color: var(--accent, #00c2ff); }
+.toast-info .toast-icon { color: var(--accent, #00c2ff); }

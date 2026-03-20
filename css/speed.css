@@ -1,0 +1,213 @@
+/* ─────────────────────────────────────────────────────────
+   NetReady — Speed Rounds
+   ───────────────────────────────────────────────────────── */
+
+#tool-speed { display: none; }
+#tool-speed.active { display: flex; }
+
+.speed-view, .speed-active, .speed-results {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 700px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.speed-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.speed-subtitle {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin: 0;
+}
+
+.speed-section-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px;
+}
+
+.speed-section-btn {
+  padding: 12px 16px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+  font-family: var(--font-sans);
+}
+.speed-section-btn:hover {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+.speed-all {
+  grid-column: 1 / -1;
+  text-align: center;
+  font-weight: 700;
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Active round */
+.speed-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.speed-score {
+  font-size: 16px;
+  color: var(--text-primary);
+}
+.speed-score strong {
+  color: var(--accent);
+  font-size: 22px;
+}
+
+.speed-timer-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  max-width: 300px;
+}
+
+#speedTimer {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--orange);
+  min-width: 40px;
+  text-align: right;
+}
+
+.speed-timer-bar {
+  flex: 1;
+  height: 8px;
+  background: var(--bg-base);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.speed-timer-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--red), var(--orange));
+  border-radius: 4px;
+  transition: width 1s linear;
+}
+
+.speed-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  text-align: center;
+}
+
+.speed-question {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 16px 0;
+  line-height: 1.5;
+}
+
+.speed-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.speed-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: left;
+  font-family: var(--font-sans);
+}
+.speed-option:hover { border-color: var(--accent); }
+
+.speed-letter {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--bg-base);
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.speed-option.correct { border-color: var(--green); background: rgba(34,212,124,0.12); }
+.speed-option.correct .speed-letter { background: var(--green); color: #0f1117; }
+.speed-option.wrong { border-color: var(--red); background: rgba(248,113,113,0.12); }
+.speed-option.wrong .speed-letter { background: var(--red); color: #fff; }
+
+/* Results */
+.speed-results { align-items: center; padding-top: 40px; }
+
+.speed-results-title {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--orange);
+  margin: 0;
+}
+
+.speed-results-stats {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.speed-results-stat {
+  text-align: center;
+  padding: 16px 20px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  min-width: 100px;
+}
+
+.speed-results-val {
+  display: block;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.speed-results-lbl {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 4px;
+}
+
+.speed-results-actions {
+  display: flex;
+  gap: 12px;
+}

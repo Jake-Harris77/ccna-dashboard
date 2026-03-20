@@ -1,0 +1,61 @@
+/* ─────────────────────────────────────────────────────────
+   NetReady — Light Theme Override
+   ───────────────────────────────────────────────────────── */
+
+body.theme-light {
+  --bg-base:        #f4f5f7;
+  --bg-surface:     #ffffff;
+  --bg-elevated:    #f0f1f3;
+  --bg-card:        #ffffff;
+  --border:         #d8dce4;
+  --border-light:   #c4c9d4;
+
+  --accent:         #0088cc;
+  --accent-dim:     rgba(0, 136, 204, 0.1);
+  --accent-hover:   #006faa;
+  --green:          #16a34a;
+  --green-dim:      rgba(22, 163, 74, 0.1);
+  --yellow:         #ca8a04;
+  --yellow-dim:     rgba(202, 138, 4, 0.1);
+  --red:            #dc2626;
+  --orange:         #ea580c;
+
+  --text-primary:   #1a1a2e;
+  --text-secondary: #4a5568;
+  --text-muted:     #94a3b8;
+  --text-code:      #0369a1;
+
+  --shadow:         0 4px 24px rgba(0,0,0,0.08);
+}
+
+/* Theme toggle button */
+.theme-toggle-btn {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+.theme-toggle-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+
+/* Fix ember visibility in light mode */
+body.theme-light .ambient-ember {
+  opacity: 0.4;
+}
+body.theme-light .sidebar {
+  box-shadow: 2px 0 12px rgba(0,0,0,0.06);
+}
+body.theme-light .topbar {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
