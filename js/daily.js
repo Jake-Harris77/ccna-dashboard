@@ -65,7 +65,7 @@ var DailyChallenge = (function () {
     var statusText = completed ? 'Completed!' : 'Battle section "' + section.name + '" today';
     var actionHTML = completed
       ? '<span class="daily-check">\u2713</span>'
-      : '<button class="anki-btn anki-btn-accent daily-go-btn" data-daily-section="' + section.id + '">Go \u2192</button>';
+      : '<button class="anki-btn anki-btn-accent daily-go-btn" id="dailyChallengeBtn" data-section="' + section.id + '">Go \u2192</button>';
 
     return '<div class="daily-banner ' + statusClass + '">'
       + '<div class="daily-banner-left">'
@@ -76,10 +76,20 @@ var DailyChallenge = (function () {
       + '</div>';
   }
 
+  function checkCompletion (sectionId, correct, wrong) {
+    var challenge = getTodayChallenge();
+    if (!challenge) return;
+    if (isCompleted()) return;
+    if (sectionId === challenge.id) {
+      markCompleted(correct, correct + wrong);
+    }
+  }
+
   return {
     getTodayChallenge: getTodayChallenge,
     isCompleted: isCompleted,
     markCompleted: markCompleted,
+    checkCompletion: checkCompletion,
     renderBanner: renderBanner,
   };
 })();
