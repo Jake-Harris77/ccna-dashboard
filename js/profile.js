@@ -218,7 +218,20 @@ var Profile = (function () {
         + '</div>';
     }).join('');
 
+    var emberIntensity = parseInt(localStorage.getItem('ccna_ember_intensity') || '75', 10);
+
     panel.innerHTML = '<div class="profile-container">'
+      + '<div class="profile-card">'
+      + '  <div class="profile-section-title" style="margin-bottom:14px;">⚙️ Visual Settings</div>'
+      + '  <div class="ember-setting">'
+      + '    <div class="ember-setting-label">'
+      + '      <span>🔥 Ember Intensity</span>'
+      + '      <span class="ember-val-display" id="emberValDisplay">' + emberIntensity + '%</span>'
+      + '    </div>'
+      + '    <input type="range" id="emberSlider" class="ember-slider" min="0" max="100" value="' + emberIntensity + '">'
+      + '    <div class="ember-slider-ticks"><span>Off</span><span>Low</span><span>Med</span><span>High</span><span>Max</span></div>'
+      + '  </div>'
+      + '</div>'
       + '<div class="profile-card">'
       + '  <div class="profile-avatar-display">'
       + '    <div class="profile-avatar-large avatar-ring" data-border="' + p.border + '">'
@@ -248,6 +261,19 @@ var Profile = (function () {
       + (premiumAvatarKeys.length > 0 ? '<div class="profile-section-title" style="margin-top:20px;">Premium Avatars</div><div class="avatar-picker-grid" id="premiumAvatarGrid">' + premiumGridHTML + '</div>' : '')
       + '</div>'
       + '</div>';
+
+    // Bind ember intensity slider
+    var emberSlider = document.getElementById('emberSlider');
+    var emberValDisplay = document.getElementById('emberValDisplay');
+    if (emberSlider) {
+      emberSlider.addEventListener('input', function () {
+        var val = parseInt(this.value, 10);
+        if (emberValDisplay) emberValDisplay.textContent = val + '%';
+        if (typeof window.applyEmberIntensity === 'function') {
+          window.applyEmberIntensity(val);
+        }
+      });
+    }
 
     // Bind avatar selection
     panel.addEventListener('click', function (e) {

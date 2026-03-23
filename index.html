@@ -424,7 +424,7 @@
   <!-- Spawn ambient fire embers in sidebar & main content -->
   <script>
   (function(){
-    var fireColors = ['#e11a2c', '#fb923c', '#fbbf24', '#ff6b35', '#e11a2c'];
+    var fireColors = ['#e11a2c', '#fb923c', '#fbbf24', '#ff6b35', '#ff4500', '#e11a2c'];
     function spawnEmbers(containerId, count, sizeMin, sizeMax) {
       var el = document.getElementById(containerId);
       if (!el) return;
@@ -437,14 +437,28 @@
         em.style.left = (5 + Math.random() * 90) + '%';
         var col = fireColors[Math.floor(Math.random() * fireColors.length)];
         em.style.background = col;
-        em.style.boxShadow = '0 0 ' + (sz * 3) + 'px ' + col + ', 0 0 ' + (sz * 6) + 'px ' + col;
+        em.style.boxShadow = '0 0 ' + (sz * 5) + 'px ' + col
+          + ', 0 0 ' + (sz * 10) + 'px ' + col
+          + ', 0 0 ' + (sz * 16) + 'px rgba(225,70,20,0.4)';
         em.style.animationDuration = (4 + Math.random() * 6) + 's';
         em.style.animationDelay = (Math.random() * 8) + 's';
         el.appendChild(em);
       }
     }
-    spawnEmbers('sidebarEmbers', 22, 2, 5);
-    spawnEmbers('mainEmbers', 40, 2, 6);
+    spawnEmbers('sidebarEmbers', 28, 3, 7);
+    spawnEmbers('mainEmbers', 55, 3, 9);
+
+    // Apply saved ember intensity (default 75)
+    var intensity = parseInt(localStorage.getItem('ccna_ember_intensity') || '75', 10);
+    window.applyEmberIntensity = function(val) {
+      var opacity = val / 100;
+      var se = document.getElementById('sidebarEmbers');
+      var me = document.getElementById('mainEmbers');
+      if (se) se.style.opacity = opacity;
+      if (me) me.style.opacity = opacity;
+      localStorage.setItem('ccna_ember_intensity', val);
+    };
+    window.applyEmberIntensity(intensity);
   })();
   </script>
 </body>

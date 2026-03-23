@@ -757,3 +757,75 @@
   .topbar-level-badge { padding: 3px 6px; }
   .shop-grid { grid-template-columns: 1fr; }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   EMBER INTENSITY SLIDER (Profile > Visual Settings)
+   ═══════════════════════════════════════════════════════════ */
+
+.ember-setting {
+  padding: 4px 0 8px;
+}
+
+.ember-setting-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  font-size: 13.5px;
+  color: var(--text-secondary);
+}
+
+.ember-val-display {
+  font-weight: 700;
+  font-size: 13px;
+  color: #fb923c;
+  min-width: 36px;
+  text-align: right;
+}
+
+.ember-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right, #e11a2c, #fb923c, #fbbf24);
+  outline: none;
+  cursor: pointer;
+}
+
+.ember-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fb923c;
+  border: 2px solid var(--bg-base);
+  box-shadow: 0 0 8px rgba(251,146,60,0.7), 0 0 16px rgba(251,146,60,0.3);
+  cursor: pointer;
+  transition: box-shadow 0.15s;
+}
+
+.ember-slider::-webkit-slider-thumb:hover {
+  box-shadow: 0 0 12px rgba(251,146,60,0.9), 0 0 24px rgba(251,146,60,0.5);
+}
+
+.ember-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fb923c;
+  border: 2px solid var(--bg-base);
+  box-shadow: 0 0 8px rgba(251,146,60,0.7);
+  cursor: pointer;
+}
+
+.ember-slider-ticks {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 0.3px;
+}
