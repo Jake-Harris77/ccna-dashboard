@@ -312,7 +312,7 @@
   animation: none;
 }
 .terr-beaten-today::after {
-  content: '\u2713';
+  content: '\2713';
   position: absolute;
   top: 6px;
   right: 28px;

@@ -248,7 +248,7 @@
       return `
         <button class="territory-tile terr-${status}${highMastery}${todayClass}" data-section="${sec.id}" title="${esc(sec.name)} (${sec.count} cards)" style="--mastery-ring: ${mColor}">
           <div class="terr-section-num">S${sec.id}</div>
-          ${mInfo.dueCount > 0 ? `<div class="terr-due-badge">${mInfo.dueCount} due</div>` : ''}
+          ${mInfo.dueCount > 0 && status !== 'conquered' ? `<div class="terr-due-badge">${mInfo.dueCount} due</div>` : ''}
           ${hasGuide ? `<div class="terr-study-btn" data-study="${sec.id}" title="Study Guide"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>` : ''}
           <div class="terr-status-icon">${statusIcon}</div>
           <div class="terr-name">${esc(sec.name)}</div>
