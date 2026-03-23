@@ -99,7 +99,7 @@ input, button { outline: none; border: none; }
 }
 
 .sidebar-nav {
-  flex: 1;
+  flex: 1 0 auto;   /* grow but NEVER shrink — lets sidebar scroll instead */
   padding: 16px 10px;
   display: flex;
   flex-direction: column;
@@ -150,6 +150,7 @@ input, button { outline: none; border: none; }
 }
 
 .sidebar-footer {
+  flex-shrink: 0;   /* always fully visible, never compressed */
   padding: 14px 16px;
   border-top: 1px solid var(--border);
   font-size: 11px;
