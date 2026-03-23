@@ -365,7 +365,8 @@
 .sidebar {
   background: linear-gradient(180deg, var(--bg-surface) 0%, var(--bg-surface) 85%, rgba(225, 26, 44, 0.06) 100%);
   position: relative;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .sidebar::after {
