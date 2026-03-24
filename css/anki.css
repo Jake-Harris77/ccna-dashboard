@@ -156,7 +156,160 @@
   transition: width 0.5s;
 }
 
-/* ── Territory Grid ──────────────────────────────────────── */
+/* ── Campaign Map (replaces card grid) ───────────────────── */
+.anki-map-scroll {
+  overflow: auto;
+  padding: 12px 4px 20px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent) var(--bg-elevated);
+}
+.anki-map-scroll::-webkit-scrollbar { height: 6px; width: 6px; }
+.anki-map-scroll::-webkit-scrollbar-track { background: var(--bg-elevated); border-radius: 3px; }
+.anki-map-scroll::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 3px; }
+
+.anki-map-canvas {
+  position: relative;
+  margin: 0 auto;
+}
+.anki-map-svg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+
+/* ── Map Nodes ───────────────────────────────────────────── */
+.map-node {
+  position: absolute;
+  border-radius: 50%;
+  background: var(--bg-surface);
+  border: 2px solid var(--nc, #e11a2c);
+  box-shadow: 0 0 10px rgba(0,0,0,0.6), 0 0 6px var(--nc, #e11a2c);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+  z-index: 2;
+  padding: 0;
+}
+.map-node:hover {
+  transform: scale(1.18);
+  box-shadow: 0 0 18px rgba(0,0,0,0.5), 0 0 18px var(--nc, #e11a2c);
+  z-index: 20;
+}
+.mn-conquered {
+  background: rgba(0,240,255,0.07);
+  animation: mnPulse 3.2s ease-in-out infinite;
+}
+@keyframes mnPulse {
+  0%,100% { box-shadow: 0 0 10px rgba(0,0,0,0.5), 0 0 6px rgba(0,240,255,0.4); }
+  50%      { box-shadow: 0 0 10px rgba(0,0,0,0.5), 0 0 22px rgba(0,240,255,0.75); }
+}
+.mn-in-progress { background: rgba(255,165,50,0.06); }
+.mn-decayed     { background: rgba(245,158,11,0.07); }
+.mn-unconquered { background: rgba(225,26,44,0.05); }
+
+/* Focus section — star + gold outline */
+.mn-focus {
+  border-width: 3px !important;
+  outline: 3px solid rgba(251,191,36,0.4);
+  outline-offset: 3px;
+}
+
+/* Study guide mini-button (shows on hover) */
+.mn-guide {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s;
+  color: var(--text-secondary);
+  z-index: 5;
+}
+.map-node:hover .mn-guide { opacity: 1; }
+.mn-guide:hover { background: var(--accent); color: var(--bg-base); border-color: var(--accent); }
+
+/* Section number badge */
+.mn-num {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  font-size: 8.5px;
+  font-weight: 800;
+  padding: 0 3px;
+  line-height: 14px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  pointer-events: none;
+}
+
+/* Due count badge */
+.mn-due {
+  position: absolute;
+  top: -6px;
+  left: -4px;
+  background: var(--red);
+  color: #fff;
+  border-radius: 8px;
+  font-size: 8px;
+  font-weight: 800;
+  padding: 1px 4px;
+  min-width: 15px;
+  text-align: center;
+  pointer-events: none;
+}
+
+/* Focus star pin */
+.mn-pin {
+  position: absolute;
+  top: -13px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 13px;
+  color: var(--yellow);
+  pointer-events: none;
+  text-shadow: 0 0 8px rgba(251,191,36,0.8);
+}
+
+/* Icon */
+.mn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Section name label below node */
+.map-label {
+  position: absolute;
+  transform: translateX(-50%);
+  font-size: 9.5px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 134px;
+  text-align: center;
+  pointer-events: none;
+  font-family: var(--font-mono);
+  letter-spacing: 0.2px;
+}
+
+/* Legacy grid — keep for any fallback */
 .anki-territory-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));

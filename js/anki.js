@@ -245,38 +245,127 @@
     const totalCards = ANKI_CARDS.length;
 
     const focusSection = localStorage.getItem('netready_focus_section') || '';
-    const tilesHTML = ANKI_SECTIONS.map(sec => {
+
+    // ── Campaign Map geometry ──────────────────────────────────
+    const MAP_COLS = 6, H_STEP = 150, V_STEP = 168, MAP_PAD = 82, NODE_R = 40;
+    const mapW = MAP_PAD * 2 + (MAP_COLS - 1) * H_STEP;
+    const nMapRows = Math.ceil(ANKI_SECTIONS.length / MAP_COLS);
+    const mapH = MAP_PAD * 2 + (nMapRows - 1) * V_STEP + 58;
+
+    function npos (i) {
+      const row = Math.floor(i / MAP_COLS), col = i % MAP_COLS;
+      return {
+        x: MAP_PAD + (row % 2 === 0 ? col : MAP_COLS - 1 - col) * H_STEP,
+        y: MAP_PAD + row * V_STEP
+      };
+    }
+
+    // Topic cluster zones (6 sections per row = 6 rows)
+    const CLUSTERS = [
+      { label: 'OSI FOUNDATIONS',  color: '0,200,255',   row: 0 },
+      { label: 'NETWORK BASICS',   color: '110,120,255', row: 1 },
+      { label: 'ROUTING',          color: '0,220,140',   row: 2 },
+      { label: 'SWITCHING',        color: '255,165,50',  row: 3 },
+      { label: 'SECURITY / WAN',   color: '220,60,80',   row: 4 },
+      { label: 'ADVANCED TOPICS',  color: '200,170,50',  row: 5 },
+    ];
+
+    // Build SVG content: grid dots, cluster zones, connection paths
+    let svg = `<defs>
+      <pattern id="mapDots" width="32" height="32" patternUnits="userSpaceOnUse">
+        <circle cx="16" cy="16" r="0.9" fill="rgba(255,255,255,0.055)"/>
+      </pattern>
+      <filter id="glow"><feGaussianBlur stdDeviation="3" result="blur"/>
+        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    </defs>
+    <rect width="${mapW}" height="${mapH}" fill="url(#mapDots)"/>`;
+
+    // Cluster background zones
+    CLUSTERS.forEach(cl => {
+      const cy = MAP_PAD + cl.row * V_STEP;
+      const lx = cl.row % 2 === 0 ? 18 : mapW - 18;
+      const anchor = cl.row % 2 === 0 ? 'start' : 'end';
+      svg += `<rect x="14" y="${cy - NODE_R - 16}" width="${mapW - 28}" height="${NODE_R * 2 + 32}"
+        rx="18" fill="rgba(${cl.color},0.038)" stroke="rgba(${cl.color},0.09)" stroke-width="1"/>
+      <text x="${lx}" y="${cy - NODE_R - 3}" text-anchor="${anchor}"
+        fill="rgba(${cl.color},0.38)" font-size="8.5" font-family="monospace"
+        font-weight="700" letter-spacing="1.8">${cl.label}</text>`;
+    });
+
+    // Connection paths between adjacent sections
+    for (let i = 0; i < ANKI_SECTIONS.length - 1; i++) {
+      const p1 = npos(i), p2 = npos(i + 1);
+      const st = getSectionStatus(ANKI_SECTIONS[i].id);
+      if (st === 'conquered') {
+        svg += `<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}"
+          stroke="rgba(0,240,255,0.18)" stroke-width="10" stroke-linecap="round"/>
+        <line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}"
+          stroke="rgba(0,240,255,0.55)" stroke-width="2.5" stroke-linecap="round"/>`;
+      } else if (st === 'in-progress') {
+        svg += `<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}"
+          stroke="rgba(255,165,50,0.35)" stroke-width="2" stroke-linecap="round" stroke-dasharray="8 5"/>`;
+      } else {
+        svg += `<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}"
+          stroke="rgba(255,255,255,0.09)" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="5 7"/>`;
+      }
+    }
+
+    // Node HTML elements
+    const nodesHTML = ANKI_SECTIONS.map((sec, i) => {
+      const { x, y } = npos(i);
       const status = getSectionStatus(sec.id);
-      const secData = game.sections[sec.id] || {};
-      const hpPct = secData.maxHP ? Math.round(((secData.maxHP - (secData.hp || 0)) / secData.maxHP) * 100) : 0;
       const mInfo = getSectionMasteryInfo(sec.id);
       const masteryPct = Math.round((mInfo.avgMastery / 5) * 100);
-      const highMastery = masteryPct >= 80 ? ' terr-high-mastery' : '';
-
-      const statusIcon = status === 'conquered' ? '<svg class="terr-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>'
-        : status === 'decayed' ? '<svg class="terr-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
-        : '<svg class="terr-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>';
-
-      const mColor = masteryColor(masteryPct);
-
-      const hasGuide = sec.studyGuide;
       const beatenToday = wasBossBeatenToday(sec.id);
-      const todayClass = beatenToday ? ' terr-beaten-today' : '';
-      const focusClass = focusSection === sec.id ? ' terr-focus' : '';
-      return `
-        <button class="territory-tile terr-${status}${highMastery}${todayClass}${focusClass}" data-section="${sec.id}" title="${esc(sec.name)} (${sec.count} cards)" style="--mastery-ring: ${mColor}">
-          <div class="terr-section-num">S${sec.id}</div>
-          ${mInfo.dueCount > 0 && status !== 'conquered' ? `<div class="terr-due-badge">${mInfo.dueCount} due</div>` : ''}
-          ${hasGuide ? `<div class="terr-study-btn" data-study="${sec.id}" title="Study Guide"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>` : ''}
-          <div class="terr-status-icon">${statusIcon}</div>
-          <div class="terr-name">${esc(sec.name)}</div>
-          <div class="terr-card-count">${sec.count} cards</div>
-          <div class="terr-mastery-info">${masteryPct}% mastery</div>
-          <div class="terr-mastery-bar"><div class="terr-mastery-fill" style="width:${masteryPct}%"></div></div>
-          ${status !== 'conquered' ? `<div class="terr-hp-bar"><div class="terr-hp-fill" style="width:${hpPct}%"></div></div>` : ''}
+      const isFocus = focusSection === sec.id;
+      const dueCount = mInfo.dueCount;
+      const D = NODE_R * 2;
+
+      const nc = status === 'conquered' ? '#00f0ff'
+        : status === 'decayed'    ? '#f59e0b'
+        : status === 'in-progress'? '#ff9a3c'
+        : '#e11a2c';
+
+      // Mastery ring (SVG stroke-dasharray)
+      const rr = NODE_R - 5;
+      const circ = Math.round(2 * Math.PI * rr);
+      const filled = Math.round(circ * masteryPct / 100);
+      const ringC = masteryPct >= 80 ? '#22c55e' : masteryPct >= 40 ? '#00f0ff' : masteryPct > 0 ? '#f59e0b' : 'rgba(255,255,255,0.1)';
+
+      const iconSVG = status === 'conquered'
+        ? `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>`
+        : status === 'decayed'
+        ? `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`
+        : `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>`;
+
+      const cls = ['map-node', `mn-${status}`, beatenToday ? 'mn-done' : '', isFocus ? 'mn-focus' : ''].filter(Boolean).join(' ');
+
+      return `<button class="${cls}" data-section="${sec.id}"
+          title="${esc(sec.name)} — ${masteryPct}% mastery"
+          style="left:${x - NODE_R}px;top:${y - NODE_R}px;width:${D}px;height:${D}px;--nc:${nc}">
+          <svg width="${D}" height="${D}" viewBox="0 0 ${D} ${D}" style="position:absolute;inset:0;pointer-events:none">
+            <circle cx="${NODE_R}" cy="${NODE_R}" r="${rr}" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="3"/>
+            <circle cx="${NODE_R}" cy="${NODE_R}" r="${rr}" fill="none" stroke="${ringC}" stroke-width="3"
+              stroke-dasharray="${filled} ${circ - filled}" stroke-dashoffset="${Math.round(circ / 4)}"
+              stroke-linecap="round"/>
+          </svg>
+          <span class="mn-icon" style="color:${nc}">${iconSVG}</span>
+          <span class="mn-num">${sec.id}</span>
+          ${dueCount > 0 && status !== 'conquered' ? `<span class="mn-due">${dueCount}</span>` : ''}
+          ${isFocus ? `<span class="mn-pin">\u2605</span>` : ''}
+          ${sec.studyGuide ? `<span class="mn-guide" data-study="${sec.id}" title="Study Guide">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+              <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+            </svg></span>` : ''}
         </button>
-      `;
+        <div class="map-label" style="left:${x}px;top:${y + NODE_R + 4}px">${esc(sec.name)}</div>`;
     }).join('');
+
+    const tilesHTML = `<div class="anki-map-canvas" style="width:${mapW}px;height:${mapH}px">
+      <svg class="anki-map-svg" width="${mapW}" height="${mapH}">${svg}</svg>
+      ${nodesHTML}
+    </div>`;
 
     // Daily challenge banner
     const dailyBannerHTML = (typeof DailyChallenge !== 'undefined' && DailyChallenge.renderBanner)
@@ -320,7 +409,7 @@
             <span>${conquered} / ${totalSections} sections conquered</span>
           </div>
         </div>
-        <div class="anki-territory-grid" id="ankiTerritoryGrid">${tilesHTML}</div>
+        <div class="anki-map-scroll" id="ankiTerritoryGrid">${tilesHTML}</div>
       </div>
     `;
 
@@ -339,16 +428,10 @@
     }
 
     el('ankiTerritoryGrid').addEventListener('click', e => {
-      // Study guide button
-      const studyBtn = e.target.closest('.terr-study-btn');
-      if (studyBtn) {
-        e.stopPropagation();
-        renderStudyGuide(studyBtn.dataset.study);
-        return;
-      }
-      const tile = e.target.closest('.territory-tile');
-      if (!tile) return;
-      startBossBattle(tile.dataset.section);
+      const guide = e.target.closest('.mn-guide');
+      if (guide) { e.stopPropagation(); renderStudyGuide(guide.dataset.study); return; }
+      const node = e.target.closest('.map-node');
+      if (node) startBossBattle(node.dataset.section);
     });
   }
 
