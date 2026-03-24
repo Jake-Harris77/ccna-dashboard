@@ -297,6 +297,30 @@
 .terr-locked { opacity: 0.4; cursor: not-allowed; }
 .terr-locked .terr-icon { stroke: var(--text-muted); }
 
+/* Today's focus section — golden glow */
+.terr-focus {
+  border-color: var(--yellow) !important;
+  box-shadow: 0 0 18px rgba(251,191,36,0.35) !important;
+}
+.terr-focus::before {
+  content: 'TODAY\'S FOCUS';
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  color: var(--yellow);
+  background: #181c24;
+  padding: 1px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(251,191,36,0.4);
+  white-space: nowrap;
+  z-index: 2;
+}
+.terr-focus:hover { box-shadow: 0 0 28px rgba(251,191,36,0.5) !important; }
+
 /* Beaten today — stays green regardless of re-entering boss */
 .terr-beaten-today {
   border-color: var(--green) !important;

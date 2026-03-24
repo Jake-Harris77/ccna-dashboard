@@ -44,14 +44,57 @@
   if (window.CoinSystem) CoinSystem.init();
   if (window.Theme) Theme.init();
 
-  // ── Loading screen fade-out ─────────────────────────────
+  // ── Loading screen: show click-to-start after bar fills ─
   setTimeout(function () {
     var loadingScreen = document.getElementById('loadingScreen');
-    if (loadingScreen) {
+    if (!loadingScreen) return;
+    var cta = document.createElement('div');
+    cta.className = 'loading-cta';
+    cta.textContent = 'Click anywhere to start learning today';
+    loadingScreen.appendChild(cta);
+    loadingScreen.style.cursor = 'pointer';
+    loadingScreen.addEventListener('click', function () {
       loadingScreen.classList.add('fade-out');
-      setTimeout(function () { loadingScreen.remove(); }, 800);
-    }
-  }, 4200);
+      setTimeout(function () {
+        loadingScreen.remove();
+        showStudyFocusModal();
+      }, 700);
+    }, { once: true });
+  }, 5000);
+
+  // ── Study focus modal (shown after loading screen) ───────
+  function showStudyFocusModal () {
+    if (typeof ANKI_SECTIONS === 'undefined') return;
+    var saved = localStorage.getItem('netready_focus_section') || '';
+    var opts = ANKI_SECTIONS.map(function (s) {
+      return '<option value="' + s.id + '"' + (saved === s.id ? ' selected' : '') + '>' + s.name + '</option>';
+    }).join('');
+    var modal = document.createElement('div');
+    modal.id = 'studyFocusModal';
+    modal.innerHTML =
+      '<div class="sfm-backdrop"></div>' +
+      '<div class="sfm-box">' +
+      '  <div class="sfm-icon">\uD83D\uDCE1</div>' +
+      '  <h2 class="sfm-title">What are you studying today?</h2>' +
+      '  <p class="sfm-sub">Pick your focus section \u2014 it will be highlighted on the Territory Map.</p>' +
+      '  <select id="sfmSelect" class="sfm-select">' +
+      '    <option value="">\u2014 Choose a section \u2014</option>' +
+      opts +
+      '  </select>' +
+      '  <div class="sfm-actions">' +
+      '    <button class="sfm-skip" id="sfmSkip">Skip</button>' +
+      '    <button class="sfm-go" id="sfmGo">Let\'s Go \u2192</button>' +
+      '  </div>' +
+      '</div>';
+    document.body.appendChild(modal);
+    document.getElementById('sfmSkip').onclick = function () { modal.remove(); };
+    document.getElementById('sfmGo').onclick = function () {
+      var val = document.getElementById('sfmSelect').value;
+      if (val) localStorage.setItem('netready_focus_section', val);
+      modal.remove();
+      if (window.AnkiEngine) AnkiEngine.init();
+    };
+  }
 
   // ── Nav switching ────────────────────────────────────────
   navItems.forEach(function (item) {

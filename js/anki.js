@@ -92,6 +92,22 @@
 
   // ── Distractor generation for multiple choice ───────────
   // Tiered matching: same tag+section → same tag → same section → any
+  function isTooSimilar (correct, candidate) {
+    const a = correct.toLowerCase().trim();
+    const b = candidate.toLowerCase().trim();
+    if (a === b) return true;
+    // Reject if one string contains the other (e.g. "Unreachable" vs "U (Unreachable)")
+    if (a.includes(b) || b.includes(a)) return true;
+    // Strip parentheticals and punctuation, then compare core words
+    const strip = function (s) {
+      return s.replace(/\(.*?\)/g, '').replace(/[^a-z0-9]/g, ' ').replace(/\s+/g, ' ').trim();
+    };
+    const sa = strip(a), sb = strip(b);
+    if (sa === sb) return true;
+    if (sa.length > 3 && sb.length > 3 && (sa.includes(sb) || sb.includes(sa))) return true;
+    return false;
+  }
+
   function getDistractors (card, count) {
     const correctNorm = card.back.toLowerCase().trim();
     const distractors = [];
@@ -102,7 +118,7 @@
       for (const c of shuffled) {
         if (distractors.length >= count) return;
         const norm = c.back.toLowerCase().trim();
-        if (!seen.has(norm)) {
+        if (!seen.has(norm) && !isTooSimilar(correctNorm, norm)) {
           seen.add(norm);
           distractors.push(c.back);
         }
@@ -228,6 +244,7 @@
     const totalMastered = ANKI_SECTIONS.reduce((sum, sec) => sum + getSectionMasteryInfo(sec.id).mastered, 0);
     const totalCards = ANKI_CARDS.length;
 
+    const focusSection = localStorage.getItem('netready_focus_section') || '';
     const tilesHTML = ANKI_SECTIONS.map(sec => {
       const status = getSectionStatus(sec.id);
       const secData = game.sections[sec.id] || {};
@@ -245,8 +262,9 @@
       const hasGuide = sec.studyGuide;
       const beatenToday = wasBossBeatenToday(sec.id);
       const todayClass = beatenToday ? ' terr-beaten-today' : '';
+      const focusClass = focusSection === sec.id ? ' terr-focus' : '';
       return `
-        <button class="territory-tile terr-${status}${highMastery}${todayClass}" data-section="${sec.id}" title="${esc(sec.name)} (${sec.count} cards)" style="--mastery-ring: ${mColor}">
+        <button class="territory-tile terr-${status}${highMastery}${todayClass}${focusClass}" data-section="${sec.id}" title="${esc(sec.name)} (${sec.count} cards)" style="--mastery-ring: ${mColor}">
           <div class="terr-section-num">S${sec.id}</div>
           ${mInfo.dueCount > 0 && status !== 'conquered' ? `<div class="terr-due-badge">${mInfo.dueCount} due</div>` : ''}
           ${hasGuide ? `<div class="terr-study-btn" data-study="${sec.id}" title="Study Guide"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>` : ''}
@@ -779,13 +797,18 @@
       session.sessionXP += xpGain;
       if (session.streak > game.bestStreak) game.bestStreak = session.streak;
 
-      // Award 1 coin per correct answer
-      game.coins = (game.coins || 0) + 1;
+      // Streak milestone coin rewards (no coins per individual answer)
+      const streakMilestones = { 5: 3, 10: 8, 15: 15, 20: 25 };
+      if (streakMilestones[session.streak] !== undefined) {
+        const bonus = streakMilestones[session.streak];
+        game.coins = (game.coins || 0) + bonus;
+        if (typeof Toast !== 'undefined') Toast.show('\uD83D\uDCB0 ' + session.streak + '-Streak Bonus! +' + bonus + ' coins', 'success');
+      }
 
-      // Check for level-up and award 25 coins
+      // Check for level-up and award 50 coins
       const levelAfter = levelFromXP(game.xp);
       if (levelAfter > levelBefore) {
-        game.coins += 25;
+        game.coins = (game.coins || 0) + 50;
         if (typeof CoinSystem !== 'undefined') CoinSystem.updateTopbar();
         if (typeof Effects !== 'undefined') Effects.levelUp(levelAfter);
       }
@@ -871,8 +894,8 @@
     game.xp += bonusXP;
     session.sessionXP += bonusXP;
 
-    // Award 5 coins for boss victory
-    game.coins = (game.coins || 0) + 5;
+    // Award 20 coins for boss victory
+    game.coins = (game.coins || 0) + 20;
     saveGame(game);
 
     // Update topbar stats

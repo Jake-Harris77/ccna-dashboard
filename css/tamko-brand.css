@@ -195,6 +195,101 @@
   100% { width: 100%; }
 }
 
+/* ── Loading CTA (click anywhere) ────────────────────── */
+.loading-cta {
+  position: absolute;
+  bottom: 52px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 12px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  animation: ctaPulse 1.6s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes ctaPulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+/* ── Study Focus Modal ────────────────────────────────── */
+.sfm-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(6px);
+  z-index: 900;
+}
+.sfm-box {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 901;
+  background: #181c24;
+  border: 1px solid #2a3044;
+  border-radius: 16px;
+  padding: 36px 40px;
+  width: 420px;
+  max-width: 90vw;
+  text-align: center;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.6), 0 0 40px rgba(0,194,255,0.08);
+  animation: sfmIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes sfmIn {
+  from { opacity: 0; transform: translate(-50%, -48%) scale(0.95); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+.sfm-icon { font-size: 36px; margin-bottom: 12px; }
+.sfm-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #e4e8f0;
+  margin: 0 0 8px;
+}
+.sfm-sub {
+  font-size: 13px;
+  color: #8892a4;
+  margin: 0 0 20px;
+  line-height: 1.5;
+}
+.sfm-select {
+  width: 100%;
+  padding: 10px 14px;
+  background: #1e2330;
+  border: 1px solid #2a3044;
+  border-radius: 8px;
+  color: #e4e8f0;
+  font-size: 14px;
+  margin-bottom: 20px;
+  outline: none;
+  cursor: pointer;
+}
+.sfm-select:focus { border-color: #00c2ff; }
+.sfm-actions { display: flex; gap: 10px; justify-content: center; }
+.sfm-skip {
+  padding: 10px 20px;
+  background: transparent;
+  border: 1px solid #2a3044;
+  border-radius: 8px;
+  color: #8892a4;
+  font-size: 14px;
+  cursor: pointer;
+}
+.sfm-skip:hover { border-color: #8892a4; color: #e4e8f0; }
+.sfm-go {
+  padding: 10px 24px;
+  background: #00c2ff;
+  border: none;
+  border-radius: 8px;
+  color: #0f1117;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.sfm-go:hover { background: #33ceff; }
 
 /* ── Bottom Fire / Light Effect ───────────────────────── */
 .loading-fire-glow {
