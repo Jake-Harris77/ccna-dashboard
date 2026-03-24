@@ -1,0 +1,221 @@
+/* ═══════════════════════════════════════════════════════════
+   Territory Map — Risk-style interactive campaign map
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Outer wrapper ──────────────────────────────────────── */
+.tmap-outer {
+  position: relative;
+  width: 100%;
+  height: 620px;
+  overflow: hidden;
+  background: #080c18;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.06);
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.tmap-outer:active { cursor: grabbing; }
+
+/* ── 3D perspective scene ───────────────────────────────── */
+.tmap-scene {
+  width: 100%;
+  height: 100%;
+  perspective: 1100px;
+  perspective-origin: 50% 30%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Pan layer (receives JS transform) ─────────────────── */
+.tmap-pan {
+  transform-origin: center center;
+  transition: transform 0.04s linear;
+  transform-style: preserve-3d;
+}
+
+/* ── SVG with 3D tilt ───────────────────────────────────── */
+.tmap-svg {
+  display: block;
+  transform: rotateX(14deg) rotateZ(-1.5deg);
+  transform-origin: center 40%;
+  transform-style: preserve-3d;
+  filter: drop-shadow(0 20px 40px rgba(0,0,0,0.7));
+}
+
+/* ── Territory polygons ─────────────────────────────────── */
+.terr-poly {
+  cursor: pointer;
+  transition: fill-opacity 0.15s, filter 0.15s;
+}
+.terr-poly:hover {
+  filter: brightness(1.25);
+}
+.terr-conquered {
+  filter: drop-shadow(0 0 6px rgba(255,255,255,0.2));
+}
+.terr-conquered:hover {
+  filter: brightness(1.15) drop-shadow(0 0 10px rgba(255,255,255,0.3));
+}
+.terr-focus {
+  filter: drop-shadow(0 0 8px rgba(251,191,36,0.6));
+}
+.terr-beaten {
+  filter: drop-shadow(0 0 10px rgba(34,212,124,0.4));
+}
+
+/* ── Territory borders ──────────────────────────────────── */
+.terr-border {
+  stroke: rgba(0,0,0,0.55);
+  stroke-width: 1.2;
+  pointer-events: none;
+}
+
+/* ── Continent borders (thick coastline look) ───────────── */
+.cont-border-glow {
+  stroke: rgba(255,255,255,0.06);
+  stroke-width: 10;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+.cont-border {
+  stroke: rgba(0,0,0,0.9);
+  stroke-width: 4;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+
+/* ── Continent watermark text ───────────────────────────── */
+.cont-wm {
+  font-size: 22px;
+  font-family: var(--font-mono, monospace);
+  font-weight: 900;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  letter-spacing: 2px;
+  pointer-events: none;
+}
+
+/* ── Territory label text ───────────────────────────────── */
+.tl-num {
+  font-family: var(--font-mono, monospace);
+  font-weight: 800;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  letter-spacing: 0.5px;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+}
+.tl-name {
+  font-size: 8.5px;
+  font-family: var(--font-mono, monospace);
+  text-anchor: middle;
+  dominant-baseline: middle;
+  letter-spacing: 0.3px;
+}
+.tl-mastery {
+  font-size: 8px;
+  font-family: var(--font-mono, monospace);
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+.tl-check {
+  font-size: 13px;
+  font-family: sans-serif;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  font-weight: 900;
+}
+.tl-pin {
+  font-size: 13px;
+  font-family: sans-serif;
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+/* ── Controls overlay ───────────────────────────────────── */
+.tmap-controls {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 20;
+}
+.tmap-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: rgba(15,20,35,0.85);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.75);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  backdrop-filter: blur(6px);
+}
+.tmap-btn:hover {
+  background: rgba(0,240,255,0.12);
+  border-color: rgba(0,240,255,0.4);
+  color: #00f0ff;
+}
+
+/* ── Legend ─────────────────────────────────────────────── */
+.tmap-legend {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 20;
+  background: rgba(8,12,24,0.82);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  padding: 10px 12px;
+  backdrop-filter: blur(8px);
+}
+.tmap-leg-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 10px;
+  color: rgba(255,255,255,0.55);
+  font-family: var(--font-mono, monospace);
+  white-space: nowrap;
+}
+.tmap-leg-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
+/* ── Fullscreen mode ────────────────────────────────────── */
+.tmap-fullscreen {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 9999 !important;
+  border-radius: 0 !important;
+  height: 100vh !important;
+  width: 100vw !important;
+}
+.tmap-fullscreen .tmap-svg {
+  transform: rotateX(10deg) rotateZ(-1deg);
+}
+
+/* ── Responsive: smaller height on compact screens ──────── */
+@media (max-height: 750px) {
+  .tmap-outer { height: 520px; }
+}
+@media (max-width: 900px) {
+  .tmap-outer { height: 460px; }
+  .tmap-legend { display: none; }
+  .tmap-svg { transform: rotateX(8deg); }
+}
