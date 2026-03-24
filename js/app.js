@@ -63,10 +63,48 @@
   }, 5000);
 
   // ── Study focus modal (shown after loading screen) ───────
+  var COURSE_SECTIONS = [
+    { id: '03', name: '03. Host to Host Communications' },
+    { id: '04', name: '04. The Cisco IOS Operating System' },
+    { id: '05', name: '05. OSI Layer 4 - The Transport Layer' },
+    { id: '06', name: '06. OSI Layer 3 - The Network Layer' },
+    { id: '07', name: '07. IP Address Classes' },
+    { id: '08', name: '08. Subnetting' },
+    { id: '09', name: '09. OSI Layer 2 - The Data-Link Layer' },
+    { id: '10', name: '10. OSI Layer 1 - The Physical Layer' },
+    { id: '11', name: '11. Cisco Device Functions' },
+    { id: '12', name: '12. The Life of a Packet' },
+    { id: '13', name: '13. The Cisco Troubleshooting Methodology' },
+    { id: '14', name: '14. Cisco Router and Switch Basics' },
+    { id: '15', name: '15. Cisco Device Management' },
+    { id: '16', name: '16. Routing Fundamentals' },
+    { id: '17', name: '17. Dynamic Routing Protocols' },
+    { id: '18', name: '18. Connectivity Troubleshooting' },
+    { id: '19', name: '19. IGP Interior Gateway Protocol Fundamentals' },
+    { id: '20', name: '20. OSPF - Open Shortest Path First' },
+    { id: '21', name: '21. VLANs - Virtual Local Area Networks' },
+    { id: '22', name: '22. Inter-VLAN Routing' },
+    { id: '23', name: '23. DHCP - Dynamic Host Configuration Protocol' },
+    { id: '24', name: '24. HSRP - Hot Standby Router Protocol' },
+    { id: '25', name: '25. STP - Spanning Tree Protocol' },
+    { id: '26', name: '26. EtherChannel' },
+    { id: '27', name: '27. Switch Security' },
+    { id: '28', name: '28. ACLs - Access Control Lists' },
+    { id: '29', name: '29. NAT - Network Address Translation' },
+    { id: '30', name: '30. IPv6 Addressing and Routing' },
+    { id: '31', name: '31. WAN - Wide Area Networks' },
+    { id: '32', name: '32. The Security Threat Landscape' },
+    { id: '33', name: '33. Cisco Device Security' },
+    { id: '34', name: '34. Network Device Management' },
+    { id: '35', name: '35. QoS - Quality of Service' },
+    { id: '36', name: '36. Cloud Computing' },
+    { id: '37', name: '37. Wireless Networking Fundamentals' },
+    { id: '38', name: '38. Network Automation and Programmability' },
+  ];
+
   function showStudyFocusModal () {
-    if (typeof ANKI_SECTIONS === 'undefined') return;
     var saved = localStorage.getItem('netready_focus_section') || '';
-    var opts = ANKI_SECTIONS.map(function (s) {
+    var opts = COURSE_SECTIONS.map(function (s) {
       return '<option value="' + s.id + '"' + (saved === s.id ? ' selected' : '') + '>' + s.name + '</option>';
     }).join('');
     var modal = document.createElement('div');
