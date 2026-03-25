@@ -1,6 +1,6 @@
 // ─────────────────────────────────────────────────────────────────────────────
-//  CcnaGlobe — Multi-World Design  (Three.js r128)
-//  World Select screen → 6 individual world globes
+//  CcnaGlobe — SVG Game-Path Maps (no Three.js)
+//  Overworld → pick a World → S-curve trail through 6 territories
 //  Public API: render(container, sections, getSectionStatus,
 //              getSectionMasteryInfo, wasBossBeatenToday, focusSection,
 //              onBattle, onStudyGuide)
@@ -10,375 +10,480 @@ window.CcnaGlobe = (function () {
 
   // ── World definitions ──────────────────────────────────────────────────────
   var WORLDS = [
-    { name: 'OSI Foundations',  short: 'OSI',      accent: '#4a8fd4', base: '#0e2248', glow: '#2255cc' },
-    { name: 'Network Basics',   short: 'Network',  accent: '#9a5dd8', base: '#220e48', glow: '#7722cc' },
-    { name: 'Routing',          short: 'Routing',  accent: '#d4853a', base: '#3d1e06', glow: '#cc6600' },
-    { name: 'Switching',        short: 'Switching',accent: '#2ab8b8', base: '#062e2e', glow: '#009999' },
-    { name: 'Security & WAN',   short: 'Security', accent: '#d44466', base: '#3d0815', glow: '#cc1144' },
-    { name: 'Advanced Topics',  short: 'Advanced', accent: '#38c87a', base: '#073520', glow: '#00aa66' },
+    { name: 'OSI Foundations',  short: 'OSI',      accent: '#4a9ee8', base: '#0b1e40', glow: '#2255cc' },
+    { name: 'Network Basics',   short: 'Network',  accent: '#a46de8', base: '#1a0b40', glow: '#7722cc' },
+    { name: 'Routing',          short: 'Routing',  accent: '#e8913a', base: '#3a1a06', glow: '#cc6600' },
+    { name: 'Switching',        short: 'Switching',accent: '#2cc8c8', base: '#062e2e', glow: '#009999' },
+    { name: 'Security & WAN',   short: 'Security', accent: '#e84466', base: '#3a0812', glow: '#cc1144' },
+    { name: 'Advanced Topics',  short: 'Advanced', accent: '#3ecd7e', base: '#073520', glow: '#00aa66' },
   ];
 
-  // Territory layout on 2048×1024 texture — centered at equator (cy=512)
-  // hh=210 → row centers at ±105px = ±18.5° latitude → cos(18.5°)=0.948
-  // This gives essentially equal-sized territories top and bottom
-  var WORLD_LAYOUT = { cx: 1024, cy: 512, hw: 1000, hh: 210 };
+  // ── Map layout — ViewBox 800×560 ──────────────────────────────────────────
+  // S-curve: top-left → top-right → mid-right → mid-left → bot-left → bot-right
+  var VW = 800, VH = 560;
+  var NODE_POS = [
+    { x: 128, y: 108 },   // 0
+    { x: 518, y:  92 },   // 1
+    { x: 576, y: 284 },   // 2
+    { x: 220, y: 300 },   // 3
+    { x: 148, y: 464 },   // 4
+    { x: 544, y: 452 },   // 5  ← BOSS
+  ];
+  // 5 bezier segments connecting consecutive nodes
+  var TRAIL_SEGS = [
+    'M128,108 C308,78  412,86  518,92',
+    'M518,92  C576,92  580,186 576,284',
+    'M576,284 C572,374 384,296 220,300',
+    'M220,300 C68,304   80,390 148,464',
+    'M148,464 C220,532 396,458 544,452',
+  ];
+  // Decorative terrain points (mountain triangles) between nodes
+  var TERRAIN = [
+    { x:318, y:185, r:10 },
+    { x:395, y:390, r:12 },
+    { x:205, y:198, r:8  },
+    { x:460, y:344, r:9  },
+    { x:340, y:485, r:11 },
+    { x:100, y:290, r:7  },
+  ];
 
-  // ── Seeded RNG ─────────────────────────────────────────────────────────────
-  function mkRng(seed) {
-    var s = seed | 0;
-    return function () {
-      s = (Math.imul(s, 1664525) + 1013904223) | 0;
-      return (s >>> 0) / 4294967296;
-    };
+  // ── Color helpers ──────────────────────────────────────────────────────────
+  function hexToRgb(h) {
+    h = h.replace('#','');
+    return { r:parseInt(h.slice(0,2),16)||0, g:parseInt(h.slice(2,4),16)||0, b:parseInt(h.slice(4,6),16)||0 };
   }
-
-  // ── Polygon utilities ──────────────────────────────────────────────────────
-  function polyBounds(poly) {
-    var x1=Infinity, y1=Infinity, x2=-Infinity, y2=-Infinity;
-    poly.forEach(function(p){ x1=Math.min(x1,p.x); y1=Math.min(y1,p.y); x2=Math.max(x2,p.x); y2=Math.max(y2,p.y); });
-    return { x1:x1, y1:y1, x2:x2, y2:y2 };
-  }
-  function polyCentroid(poly) {
-    var sx=0, sy=0;
-    poly.forEach(function(p){ sx+=p.x; sy+=p.y; });
-    return { x: sx/poly.length, y: sy/poly.length };
-  }
-  function hexToRgb(hex) {
-    hex = hex.replace('#','');
-    return { r:parseInt(hex.slice(0,2),16)||0, g:parseInt(hex.slice(2,4),16)||0, b:parseInt(hex.slice(4,6),16)||0 };
-  }
-  function hexToRgba(hex, a) {
-    var c = hexToRgb(hex);
-    return 'rgba('+c.r+','+c.g+','+c.b+','+a+')';
-  }
-  function blendHex(a, b, t) {
-    var ca = hexToRgb(a), cb = hexToRgb(b);
-    return 'rgb('+(ca.r+(cb.r-ca.r)*t|0)+','+(ca.g+(cb.g-ca.g)*t|0)+','+(ca.b+(cb.b-ca.b)*t|0)+')';
-  }
-  function pointInPoly(px, py, poly) {
-    var inside=false;
-    for(var i=0, j=poly.length-1; i<poly.length; j=i++){
-      var xi=poly[i].x, yi=poly[i].y, xj=poly[j].x, yj=poly[j].y;
-      if(((yi>py)!==(yj>py))&&(px<(xj-xi)*(py-yi)/(yj-yi)+xi)) inside=!inside;
-    }
-    return inside;
+  function rgba(h, a) { var c=hexToRgb(h); return 'rgba('+c.r+','+c.g+','+c.b+','+a+')'; }
+  function blend(a, b, t) {
+    var ca=hexToRgb(a), cb=hexToRgb(b);
+    return '#'+[
+      Math.round(ca.r+(cb.r-ca.r)*t).toString(16).padStart(2,'0'),
+      Math.round(ca.g+(cb.g-ca.g)*t).toString(16).padStart(2,'0'),
+      Math.round(ca.b+(cb.b-ca.b)*t).toString(16).padStart(2,'0'),
+    ].join('');
   }
 
-  // ── Build 6 territory polygons for a world ────────────────────────────────
-  function buildWorldPolys(wi) {
-    var cx=WORLD_LAYOUT.cx, cy=WORLD_LAYOUT.cy, hw=WORLD_LAYOUT.hw, hh=WORLD_LAYOUT.hh;
-    var rng = mkRng(wi * 7919 + 42);
-    var GX=4, GY=3;
-    var pts=[];
-    for(var gy=0; gy<GY; gy++) {
-      for(var gx=0; gx<GX; gx++) {
-        var bx = cx - hw + (gx/(GX-1)) * hw*2;
-        var by = cy - hh + (gy/(GY-1)) * hh*2;
-        var jx = (gx>0&&gx<GX-1) ? (rng()-0.5)*hw*0.26 : 0;
-        var jy = (gy>0&&gy<GY-1) ? (rng()-0.5)*hh*0.26 : 0;
-        pts.push({ x: bx+jx, y: by+jy });
-      }
-    }
-    function pt(gx,gy){ return pts[gy*GX+gx]; }
-    function mid(a,b){ return { x:(a.x+b.x)/2, y:(a.y+b.y)/2 }; }
-    var polys=[];
-    for(var row=0; row<2; row++) {
-      for(var col=0; col<3; col++) {
-        var tl=pt(col,row), tr=pt(col+1,row), bl=pt(col,row+1), br=pt(col+1,row+1);
-        polys.push([mid(tl,tr),tr,mid(tr,br),br,mid(br,bl),bl,mid(bl,tl),tl]);
-      }
-    }
-    return polys;
-  }
-
-  // Cache polygons per world index
-  var _worldPolys = {};
-  function getWorldPolys(wi) {
-    if(!_worldPolys[wi]) _worldPolys[wi] = buildWorldPolys(wi);
-    return _worldPolys[wi];
-  }
-
-  // UV (0-1) → section index within a world (-1 if none)
-  function uvToWorldSection(u, v, wi) {
-    var polys = getWorldPolys(wi);
-    var px = u*2048, py = v*1024;
-    for(var i=0; i<polys.length; i++){
-      if(pointInPoly(px, py, polys[i])) return i;
-    }
-    return -1;
-  }
-
-  // ── Progress helper ────────────────────────────────────────────────────────
-  function getWorldProgress(wSections, getSectionStatus) {
+  // ── Progress helpers ───────────────────────────────────────────────────────
+  function worldProgress(wSections, getSS) {
     var done=0;
     wSections.forEach(function(s){
-      var st=getSectionStatus(s.id);
-      if(st==='conquered'||st==='decayed'||st==='beaten') done++;
+      var st=getSS(s.id);
+      if(st==='conquered'||st==='decayed') done++;
     });
-    return { done: done, total: wSections.length };
+    return { done:done, total:wSections.length };
+  }
+  function currentNodeIdx(wSections, getSS, wasBeat, focus) {
+    // Find the section currently active: focusSection, else first in-progress, else last conquered+1
+    if(focus) {
+      for(var i=0;i<wSections.length;i++){
+        if(String(wSections[i].id)===String(focus)) return i;
+      }
+    }
+    for(var j=0;j<wSections.length;j++){
+      var st=getSS(wSections[j].id);
+      if(st==='in-progress') return j;
+    }
+    // Last conquered + 1
+    var last=-1;
+    for(var k=0;k<wSections.length;k++){
+      var s2=getSS(wSections[k].id);
+      if(s2==='conquered'||s2==='decayed'||wasBeat(wSections[k].id)) last=k;
+    }
+    return Math.min(last+1, wSections.length-1);
   }
 
-  // ── Draw world globe texture ───────────────────────────────────────────────
-  function drawWorldTexture(canvas, wi, wSections, getSectionStatus,
-                             getSectionMasteryInfo, wasBossBeatenToday, focusSection) {
-    var W=canvas.width, H=canvas.height;
-    var ctx=canvas.getContext('2d');
-    var world=WORLDS[wi];
-    var polys=getWorldPolys(wi);
+  // ── SVG map builder ────────────────────────────────────────────────────────
+  // nodes: [{id, label, sublabel, status, beaten, isLocked}]
+  // currentIdx: which node gets the YOU-ARE-HERE marker (-1 = none)
+  // accent / base: color strings
+  // onNodeClick(idx): callback
+  function buildSVGMap(wrapper, nodes, currentIdx, accent, base, onNodeClick) {
+    var NS = 'http://www.w3.org/2000/svg';
 
-    // Deep-space background with world color tint
-    var bg=ctx.createRadialGradient(W/2,H/2,0, W/2,H/2, W*0.65);
-    bg.addColorStop(0,   hexToRgba(world.base, 0.6));
-    bg.addColorStop(0.5, '#070d1a');
-    bg.addColorStop(1,   '#020408');
-    ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
+    // ── SVG root ──
+    var svg = document.createElementNS(NS,'svg');
+    svg.setAttribute('viewBox','0 0 '+VW+' '+VH);
+    svg.setAttribute('preserveAspectRatio','xMidYMid meet');
+    svg.style.cssText='width:100%;height:100%;display:block;';
+    wrapper.appendChild(svg);
 
-    // Lat/lon grid in world accent tint
-    ctx.strokeStyle=hexToRgba(world.accent, 0.09);
-    ctx.lineWidth=1;
-    for(var li=1;li<8;li++){
-      ctx.beginPath(); ctx.moveTo(0,li/8*H); ctx.lineTo(W,li/8*H); ctx.stroke();
+    // ── Defs: filters + gradients + animation ──
+    var defs = document.createElementNS(NS,'defs');
+    defs.innerHTML =
+      '<radialGradient id="cgBg" cx="50%" cy="48%" r="62%">'+
+        '<stop offset="0%" stop-color="'+rgba(base,0.85)+'"/>'+
+        '<stop offset="100%" stop-color="#020508"/>'+
+      '</radialGradient>'+
+      '<filter id="cgGlow" x="-60%" y="-60%" width="220%" height="220%">'+
+        '<feGaussianBlur stdDeviation="4" result="b"/>'+
+        '<feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>'+
+      '</filter>'+
+      '<filter id="cgGlowSm" x="-40%" y="-40%" width="180%" height="180%">'+
+        '<feGaussianBlur stdDeviation="2" result="b"/>'+
+        '<feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>'+
+      '</filter>'+
+      '<filter id="cgGlowXl" x="-80%" y="-80%" width="260%" height="260%">'+
+        '<feGaussianBlur stdDeviation="7" result="b"/>'+
+        '<feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>'+
+      '</filter>';
+    svg.appendChild(defs);
+
+    // ── Background ──
+    var bg = document.createElementNS(NS,'rect');
+    bg.setAttribute('width',VW); bg.setAttribute('height',VH);
+    bg.setAttribute('fill','url(#cgBg)');
+    svg.appendChild(bg);
+
+    // Subtle dot pattern
+    var patEl = document.createElementNS(NS,'g');
+    patEl.setAttribute('opacity','0.045');
+    for(var pi=0;pi<280;pi++){
+      var px=(pi*137.5)%VW, py=(pi*97.3)%VH;
+      var pc = document.createElementNS(NS,'circle');
+      pc.setAttribute('cx',px.toFixed(1)); pc.setAttribute('cy',py.toFixed(1));
+      pc.setAttribute('r','1.2'); pc.setAttribute('fill',accent);
+      patEl.appendChild(pc);
     }
-    for(var lj=1;lj<16;lj++){
-      ctx.beginPath(); ctx.moveTo(lj/16*W,0); ctx.lineTo(lj/16*W,H); ctx.stroke();
+    svg.appendChild(patEl);
+
+    // ── Terrain decorations ──
+    var terG = document.createElementNS(NS,'g');
+    terG.setAttribute('opacity','0.18');
+    TERRAIN.forEach(function(t){
+      // Mountain triangle
+      var r=t.r;
+      var tri = document.createElementNS(NS,'polygon');
+      tri.setAttribute('points',t.x+','+(t.y+r)+' '+(t.x-r*0.9)+','+(t.y+r*2.1)+' '+(t.x+r*0.9)+','+(t.y+r*2.1));
+      tri.setAttribute('fill',rgba(accent,0.4));
+      tri.setAttribute('stroke',rgba(accent,0.6));
+      tri.setAttribute('stroke-width','0.7');
+      terG.appendChild(tri);
+      // Snow cap
+      var cap = document.createElementNS(NS,'polygon');
+      cap.setAttribute('points',t.x+','+(t.y+r)+' '+(t.x-r*0.4)+','+(t.y+r*1.55)+' '+(t.x+r*0.4)+','+(t.y+r*1.55));
+      cap.setAttribute('fill','rgba(255,255,255,0.55)');
+      terG.appendChild(cap);
+    });
+    svg.appendChild(terG);
+
+    // ── Trail segments ──
+    // Determine progress: segments 0..i-1 where node[i] is conquered = complete
+    // Segment i complete if node[i] AND node[i+1] are both done
+    function segStatus(i) {
+      var a = nodes[i] ? nodes[i].status : 'locked';
+      var b = nodes[i+1] ? nodes[i+1].status : 'locked';
+      if((a==='conquered'||a==='decayed'||a==='beaten') && (b==='conquered'||b==='decayed'||b==='beaten')) return 'done';
+      if(i === currentIdx || i === currentIdx-1) return 'current';
+      if(nodes[i+1] && nodes[i+1].isLocked) return 'locked';
+      return 'upcoming';
     }
 
-    // Subtle star shimmer
-    var rng0=mkRng(wi*999+1);
-    for(var d=0;d<180;d++){
-      ctx.beginPath();
-      ctx.arc(rng0()*W, rng0()*H, 1+rng0()*1.5, 0, Math.PI*2);
-      ctx.fillStyle=hexToRgba(world.accent, 0.05+rng0()*0.07);
-      ctx.fill();
-    }
+    // Shadow trail (full path behind)
+    TRAIL_SEGS.forEach(function(d){
+      var p = document.createElementNS(NS,'path');
+      p.setAttribute('d',d); p.setAttribute('fill','none');
+      p.setAttribute('stroke','rgba(0,0,0,0.55)'); p.setAttribute('stroke-width','9');
+      p.setAttribute('stroke-linecap','round');
+      svg.appendChild(p);
+    });
 
-    // ── Draw territories ───────────────────────────────────────────────────
-    wSections.forEach(function(sec, idx) {
-      if(idx >= polys.length) return;
-      var poly=polys[idx];
-      var status=getSectionStatus(sec.id);
-      var beaten=wasBossBeatenToday(sec.id);
-      var isFocus=focusSection && String(sec.id)===String(focusSection);
-      var bounds=polyBounds(poly);
-
-      // ── Territory path ──
-      ctx.beginPath();
-      ctx.moveTo(poly[0].x, poly[0].y);
-      for(var pi=1;pi<poly.length;pi++) ctx.lineTo(poly[pi].x, poly[pi].y);
-      ctx.closePath();
-
-      // ── Fill colors ──
-      var topColor, botColor;
-      if(beaten) {
-        topColor='#22aa55'; botColor='#0a3a1e';
-      } else if(status==='conquered'||status==='decayed') {
-        topColor='#9a7020'; botColor='#3a2808';
-      } else if(status==='in-progress') {
-        topColor='#962020'; botColor='#380c0c';
+    // Styled trail segments
+    TRAIL_SEGS.forEach(function(d,i){
+      var st=segStatus(i);
+      var p = document.createElementNS(NS,'path');
+      p.setAttribute('d',d); p.setAttribute('fill','none');
+      p.setAttribute('stroke-linecap','round');
+      if(st==='done'){
+        p.setAttribute('stroke','#d4a820'); p.setAttribute('stroke-width','4');
+        p.setAttribute('filter','url(#cgGlowSm)');
+        // Dotted overlay
+        var dots = document.createElementNS(NS,'path');
+        dots.setAttribute('d',d); dots.setAttribute('fill','none');
+        dots.setAttribute('stroke','rgba(255,220,80,0.45)'); dots.setAttribute('stroke-width','2');
+        dots.setAttribute('stroke-dasharray','6,7');
+        svg.appendChild(p); svg.appendChild(dots);
+      } else if(st==='current'){
+        p.setAttribute('stroke',accent); p.setAttribute('stroke-width','3.5');
+        p.setAttribute('stroke-dasharray','8,5');
+        p.setAttribute('filter','url(#cgGlowSm)');
+        svg.appendChild(p);
       } else {
-        // Not started — distinct shade per index within world color family
-        var t = idx / 5;
-        topColor = blendHex(world.accent, '#c0d8ff', 0.08 + t*0.12);
-        botColor = blendHex(world.base,   world.accent, 0.15 + t*0.20);
-      }
-
-      var grad=ctx.createLinearGradient(bounds.x1,bounds.y1,bounds.x1,bounds.y2);
-      grad.addColorStop(0,   topColor);
-      grad.addColorStop(0.4, blendHex(topColor,botColor,0.55));
-      grad.addColorStop(1,   botColor);
-      ctx.fillStyle=grad; ctx.fill();
-
-      // ── Top-edge shine ──
-      ctx.beginPath();
-      ctx.moveTo(poly[0].x,poly[0].y);
-      for(var pi2=1;pi2<poly.length;pi2++) ctx.lineTo(poly[pi2].x,poly[pi2].y);
-      ctx.closePath();
-      var shine=ctx.createLinearGradient(bounds.x1,bounds.y1,bounds.x1,bounds.y1+(bounds.y2-bounds.y1)*0.32);
-      shine.addColorStop(0,'rgba(255,255,255,0.22)');
-      shine.addColorStop(1,'rgba(255,255,255,0)');
-      ctx.fillStyle=shine; ctx.fill();
-
-      // ── Base border ──
-      ctx.lineJoin='round';
-      ctx.strokeStyle='rgba(0,0,0,0.82)';
-      ctx.lineWidth=2.5;
-      ctx.stroke();
-
-      // ── Status/focus accent border ──
-      if(isFocus) {
-        ctx.strokeStyle='rgba(251,191,36,0.98)'; ctx.lineWidth=7; ctx.stroke();
-      } else if(beaten) {
-        ctx.strokeStyle='rgba(46,220,105,0.95)'; ctx.lineWidth=5; ctx.stroke();
-      } else if(status==='conquered'||status==='decayed') {
-        ctx.strokeStyle='rgba(220,175,40,0.90)'; ctx.lineWidth=4; ctx.stroke();
-      } else if(status==='in-progress') {
-        ctx.strokeStyle='rgba(255,80,80,0.90)';  ctx.lineWidth=4; ctx.stroke();
-      } else {
-        ctx.strokeStyle=hexToRgba(world.accent,0.55); ctx.lineWidth=2; ctx.stroke();
-      }
-
-      // ── Section number (large, centered) ──
-      var cen=polyCentroid(poly);
-      var secNum=String(sec.id).replace(/[^0-9]/g,'')||String(idx+1);
-
-      ctx.textAlign='center'; ctx.textBaseline='middle';
-      ctx.font='bold 36px "Courier New",monospace';
-      ctx.strokeStyle='rgba(0,0,0,1)'; ctx.lineWidth=9; ctx.lineJoin='round';
-      ctx.strokeText(secNum, cen.x, cen.y-10);
-      ctx.shadowColor=world.accent; ctx.shadowBlur=14;
-      ctx.fillStyle='#ffffff';
-      ctx.fillText(secNum, cen.x, cen.y-10);
-      ctx.shadowBlur=0; ctx.shadowColor='transparent';
-
-      // ── Section name (short, below number) ──
-      if(sec.name) {
-        var words=sec.name.split(' ');
-        // Show up to 3 words, abbreviating long names
-        var label = words.length<=3 ? sec.name : words.slice(0,3).join(' ');
-        ctx.font='bold 12px "Courier New",monospace';
-        ctx.strokeStyle='rgba(0,0,0,0.9)'; ctx.lineWidth=3.5;
-        ctx.strokeText(label, cen.x, cen.y+14);
-        ctx.fillStyle=hexToRgba(world.accent, 0.95);
-        ctx.fillText(label, cen.x, cen.y+14);
-      }
-
-      // ── Beaten checkmark ──
-      if(beaten) {
-        ctx.font='bold 22px sans-serif';
-        ctx.strokeStyle='rgba(0,0,0,0.95)'; ctx.lineWidth=4;
-        ctx.strokeText('✓', cen.x+38, cen.y-24);
-        ctx.fillStyle='#4ade80';
-        ctx.fillText('✓', cen.x+38, cen.y-24);
+        p.setAttribute('stroke',rgba(accent,0.12)); p.setAttribute('stroke-width','2.5');
+        p.setAttribute('stroke-dasharray','4,6');
+        svg.appendChild(p);
       }
     });
 
-    // Polar fade — darkens north and south poles for depth
-    var ng=ctx.createLinearGradient(0,0,0,140);
-    ng.addColorStop(0,'rgba(0,0,0,0.78)');
-    ng.addColorStop(1,'rgba(0,0,0,0)');
-    ctx.fillStyle=ng; ctx.fillRect(0,0,W,140);
+    // ── Compass rose (top-right corner) ──
+    var cg = document.createElementNS(NS,'g');
+    cg.setAttribute('transform','translate(748,42)');
+    cg.setAttribute('opacity','0.28');
+    ['N','S','E','W'].forEach(function(dir,di){
+      var angles=[0,180,90,270];
+      var rad=angles[di]*Math.PI/180;
+      var tx=Math.sin(rad)*16, ty=-Math.cos(rad)*16;
+      // Arrow spike
+      var spike = document.createElementNS(NS,'path');
+      spike.setAttribute('d','M0,0 L'+(-Math.cos(rad)*4)+','+(-Math.sin(rad)*4)+' L'+tx+','+ty+' L'+(Math.cos(rad)*4)+','+(Math.sin(rad)*4)+' Z');
+      spike.setAttribute('fill', di===0 ? rgba(accent,0.8) : rgba(accent,0.35));
+      cg.appendChild(spike);
+      // Label
+      var lt = document.createElementNS(NS,'text');
+      lt.setAttribute('x',(tx*1.6).toFixed(1)); lt.setAttribute('y',(ty*1.6+4).toFixed(1));
+      lt.setAttribute('text-anchor','middle'); lt.setAttribute('fill',rgba(accent,0.55));
+      lt.setAttribute('font-size','8'); lt.setAttribute('font-family','Courier New,monospace');
+      lt.setAttribute('font-weight','bold');
+      lt.textContent=dir;
+      cg.appendChild(lt);
+    });
+    // Center circle
+    var cc=document.createElementNS(NS,'circle');
+    cc.setAttribute('r','3'); cc.setAttribute('fill',rgba(accent,0.5));
+    cg.appendChild(cc);
+    svg.appendChild(cg);
 
-    var sg=ctx.createLinearGradient(0,H-140,0,H);
-    sg.addColorStop(0,'rgba(0,0,0,0)');
-    sg.addColorStop(1,'rgba(0,0,0,0.78)');
-    ctx.fillStyle=sg; ctx.fillRect(0,H-140,W,140);
+    // ── Nodes ──
+    nodes.forEach(function(node, idx) {
+      var pos = NODE_POS[idx];
+      var isBoss = (idx === nodes.length-1);
+      var isActive = (idx === currentIdx);
+      var R = isBoss ? 30 : 26;
+
+      var nodeG = document.createElementNS(NS,'g');
+      nodeG.setAttribute('transform','translate('+pos.x+','+pos.y+')');
+      if(!node.isLocked) {
+        nodeG.style.cursor='pointer';
+        nodeG.setAttribute('data-node', idx);
+      }
+
+      // Outer glow ring (status)
+      var ringColor, fillColor, textColor;
+      if(node.beaten) {
+        ringColor='#22c55e'; fillColor='#0a2f18'; textColor='#4ade80';
+      } else if(node.status==='conquered'||node.status==='decayed') {
+        ringColor='#d4a820'; fillColor='#2a1e06'; textColor='#f0c840';
+      } else if(node.status==='in-progress') {
+        ringColor=accent; fillColor=blend(base,'#000000',0.3); textColor='#ffffff';
+      } else if(node.isLocked) {
+        ringColor='rgba(255,255,255,0.10)'; fillColor='#06080e'; textColor='rgba(255,255,255,0.25)';
+      } else {
+        ringColor=rgba(accent,0.35); fillColor='#0a0f1a'; textColor='rgba(255,255,255,0.7)';
+      }
+
+      // Outer pulse ring (active nodes only)
+      if(isActive || node.status==='in-progress') {
+        var pulseRing = document.createElementNS(NS,'circle');
+        pulseRing.setAttribute('r', R+10);
+        pulseRing.setAttribute('fill','none');
+        pulseRing.setAttribute('stroke', ringColor);
+        pulseRing.setAttribute('stroke-width','1.5');
+        pulseRing.setAttribute('opacity','0.4');
+        pulseRing.setAttribute('filter','url(#cgGlow)');
+        pulseRing.setAttribute('class','cg-pulse-ring');
+        nodeG.appendChild(pulseRing);
+      }
+
+      // Glow halo for conquered/beaten
+      if(node.beaten || node.status==='conquered' || node.status==='decayed') {
+        var halo = document.createElementNS(NS,'circle');
+        halo.setAttribute('r', R+8);
+        halo.setAttribute('fill',rgba(ringColor,0.15));
+        halo.setAttribute('filter','url(#cgGlowXl)');
+        nodeG.appendChild(halo);
+      }
+
+      // Main circle shadow
+      var shadow = document.createElementNS(NS,'circle');
+      shadow.setAttribute('r', R+3);
+      shadow.setAttribute('fill','rgba(0,0,0,0.55)');
+      shadow.setAttribute('cy','3');
+      nodeG.appendChild(shadow);
+
+      // Main circle
+      var circle = document.createElementNS(NS,'circle');
+      circle.setAttribute('r', R);
+      circle.setAttribute('fill', fillColor);
+      circle.setAttribute('stroke', ringColor);
+      circle.setAttribute('stroke-width', isBoss ? '3' : '2.5');
+      if(!node.isLocked && (node.status==='in-progress'||isActive)) {
+        circle.setAttribute('filter','url(#cgGlowSm)');
+      }
+      nodeG.appendChild(circle);
+
+      // Inner highlight
+      var hl = document.createElementNS(NS,'circle');
+      hl.setAttribute('r', R*0.55); hl.setAttribute('cx','-'+R*0.18); hl.setAttribute('cy','-'+R*0.22);
+      hl.setAttribute('fill','rgba(255,255,255,0.07)');
+      nodeG.appendChild(hl);
+
+      // Boss crown / icon
+      if(isBoss && !node.isLocked) {
+        var crownTxt = document.createElementNS(NS,'text');
+        crownTxt.setAttribute('x','0'); crownTxt.setAttribute('y', -(R+12));
+        crownTxt.setAttribute('text-anchor','middle'); crownTxt.setAttribute('font-size','16');
+        crownTxt.textContent = node.beaten || node.status==='conquered' ? '👑' : '⚔';
+        nodeG.appendChild(crownTxt);
+      }
+
+      // Lock icon
+      if(node.isLocked) {
+        var lockTxt = document.createElementNS(NS,'text');
+        lockTxt.setAttribute('x','0'); lockTxt.setAttribute('y','6');
+        lockTxt.setAttribute('text-anchor','middle'); lockTxt.setAttribute('font-size','18');
+        lockTxt.setAttribute('fill','rgba(255,255,255,0.2)');
+        lockTxt.textContent='🔒';
+        nodeG.appendChild(lockTxt);
+      } else {
+        // Section number
+        var numTxt = document.createElementNS(NS,'text');
+        numTxt.setAttribute('x','0'); numTxt.setAttribute('y','7');
+        numTxt.setAttribute('text-anchor','middle'); numTxt.setAttribute('dominant-baseline','middle');
+        numTxt.setAttribute('font-family','Courier New,monospace');
+        numTxt.setAttribute('font-size', isBoss?'20':'18');
+        numTxt.setAttribute('font-weight','900');
+        numTxt.setAttribute('fill', textColor);
+        numTxt.textContent = node.label;
+        nodeG.appendChild(numTxt);
+
+        // Beaten checkmark overlay
+        if(node.beaten) {
+          var chk = document.createElementNS(NS,'text');
+          chk.setAttribute('x', R-4); chk.setAttribute('y', -(R-4));
+          chk.setAttribute('text-anchor','middle'); chk.setAttribute('font-size','14');
+          chk.setAttribute('fill','#4ade80'); chk.setAttribute('filter','url(#cgGlowSm)');
+          chk.textContent='✓';
+          nodeG.appendChild(chk);
+        }
+      }
+
+      // Section sublabel (below circle)
+      if(node.sublabel) {
+        // Dark pill background
+        var pillW = Math.min(110, node.sublabel.length*7+16);
+        var pillRect = document.createElementNS(NS,'rect');
+        pillRect.setAttribute('x',-pillW/2); pillRect.setAttribute('y', R+6);
+        pillRect.setAttribute('width',pillW); pillRect.setAttribute('height',16);
+        pillRect.setAttribute('rx','4'); pillRect.setAttribute('fill','rgba(0,0,0,0.6)');
+        nodeG.appendChild(pillRect);
+
+        var subTxt = document.createElementNS(NS,'text');
+        subTxt.setAttribute('x','0'); subTxt.setAttribute('y', R+17);
+        subTxt.setAttribute('text-anchor','middle');
+        subTxt.setAttribute('font-family','Courier New,monospace');
+        subTxt.setAttribute('font-size','9.5');
+        subTxt.setAttribute('fill', node.isLocked ? 'rgba(255,255,255,0.2)' : rgba(accent,0.9));
+        subTxt.textContent = node.sublabel.length>14 ? node.sublabel.slice(0,13)+'…' : node.sublabel;
+        nodeG.appendChild(subTxt);
+      }
+
+      // YOU ARE HERE marker
+      if(isActive && !node.isLocked) {
+        var markerG = document.createElementNS(NS,'g');
+        markerG.setAttribute('class','cg-here-marker');
+        // Triangle pointer
+        var tri = document.createElementNS(NS,'polygon');
+        tri.setAttribute('points','0,-'+( R+8)+' -8,-'+(R+22)+' 8,-'+(R+22));
+        tri.setAttribute('fill','#fbbf24');
+        tri.setAttribute('filter','url(#cgGlow)');
+        markerG.appendChild(tri);
+        // YOU text
+        var youTxt = document.createElementNS(NS,'text');
+        youTxt.setAttribute('x','0'); youTxt.setAttribute('y',-(R+28));
+        youTxt.setAttribute('text-anchor','middle');
+        youTxt.setAttribute('font-family','Courier New,monospace');
+        youTxt.setAttribute('font-size','9'); youTxt.setAttribute('font-weight','900');
+        youTxt.setAttribute('fill','#fbbf24'); youTxt.setAttribute('letter-spacing','2');
+        youTxt.textContent='YOU';
+        markerG.appendChild(youTxt);
+        nodeG.appendChild(markerG);
+      }
+
+      // Hover + click
+      if(!node.isLocked) {
+        nodeG.addEventListener('mouseenter', function(){
+          circle.setAttribute('stroke-width', isBoss?'4':'3.5');
+          circle.setAttribute('fill', blend(fillColor,'#ffffff',0.06));
+        });
+        nodeG.addEventListener('mouseleave', function(){
+          circle.setAttribute('stroke-width', isBoss?'3':'2.5');
+          circle.setAttribute('fill', fillColor);
+        });
+        nodeG.addEventListener('click', function(){ onNodeClick(idx); });
+      }
+
+      svg.appendChild(nodeG);
+    });
   }
 
-  // ── SCREEN 1: World Select ─────────────────────────────────────────────────
-  function showWorldSelect(container, sections, getSectionStatus, getSectionMasteryInfo,
-                           wasBossBeatenToday, focusSection, onBattle, onStudyGuide) {
+  // ── SCREEN 1: Overworld (6 world cards) ───────────────────────────────────
+  function showWorldSelect(container, sections, getSS, getMI, getB, focus, onBattle, onSG) {
     container.innerHTML='';
     container.style.cssText='position:relative;width:100%;height:100%;overflow:hidden;background:#02040a;';
 
-    var root=document.createElement('div');
-    root.className='cg-ws-root';
-    container.appendChild(root);
-
-    // ── Header ──
-    var hdr=document.createElement('div');
-    hdr.className='cg-ws-header';
-    hdr.innerHTML='<span class="cg-ws-title">&#x2B22; WORLD MAP</span>' +
-                  '<span class="cg-ws-sub">Select a world to begin</span>';
-    root.appendChild(hdr);
-
-    // ── Trail bar ──
-    var wSectionGroups=[];
-    for(var wi=0; wi<6; wi++) {
+    // Determine overall current world
+    var currentWorld=0;
+    for(var wi=0;wi<6;wi++){
       var grp=sections.slice(wi*6, wi*6+6);
-      while(grp.length<6) grp.push({ id:'empty-'+wi+'-'+grp.length, name:'—' });
-      wSectionGroups.push(grp);
+      var prog=worldProgress(grp, getSS);
+      if(prog.done>0) currentWorld=wi;
+      var hasIP=grp.some(function(s){return getSS(s.id)==='in-progress';});
+      if(hasIP){currentWorld=wi;break;}
     }
 
-    var trailDiv=document.createElement('div');
-    trailDiv.className='cg-trail';
-    var trailDots=WORLDS.map(function(w,i){
-      var prog=getWorldProgress(wSectionGroups[i], getSectionStatus);
-      var done=prog.done>0;
-      return '<div class="cg-trail-dot'+(done?' cg-trail-dot--done':'')+'" style="--dc:'+w.accent+'">'+
-               '<span class="cg-trail-dot-num">'+(i+1)+'</span>'+
-             '</div>';
-    }).join('<div class="cg-trail-line"></div>');
-    trailDiv.innerHTML=trailDots;
-    root.appendChild(trailDiv);
-
-    // ── World grid ──
-    var grid=document.createElement('div');
-    grid.className='cg-ws-grid';
-
-    wSectionGroups.forEach(function(wSections, wi) {
-      var world=WORLDS[wi];
-      var prog=getWorldProgress(wSections, getSectionStatus);
-      var pct=prog.total ? prog.done/prog.total : 0;
-      var circumference=(2*Math.PI*38).toFixed(2);
-      var dash=(circumference*pct).toFixed(2);
-
-      // Orb inner gradient colors
-      var orbHi=blendHex(world.accent,'#ffffff',0.35);
-
-      var card=document.createElement('div');
-      card.className='cg-ws-card';
-      card.style.cssText=
-        '--wa:'+world.accent+';'+
-        '--wb:'+world.base+';'+
-        '--wg:'+world.glow+';';
-
-      card.innerHTML=
-        '<div class="cg-ws-orb-wrap">'+
-          '<svg class="cg-ws-ring-svg" viewBox="0 0 100 100">'+
-            '<circle cx="50" cy="50" r="38" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="5"/>'+
-            '<circle cx="50" cy="50" r="38" fill="none" stroke="'+world.accent+'"'+
-              ' stroke-width="5" stroke-dasharray="'+dash+' '+circumference+'"'+
-              ' stroke-linecap="round" transform="rotate(-90 50 50)"/>'+
-          '</svg>'+
-          '<div class="cg-ws-orb" style="background:radial-gradient(circle at 34% 28%, '+orbHi+', '+world.accent+' 48%, '+world.base+' 100%)">'+
-            '<div class="cg-ws-orb-shine"></div>'+
-            '<div class="cg-ws-orb-num">'+(wi+1)+'</div>'+
-          '</div>'+
-        '</div>'+
-        '<div class="cg-ws-card-body">'+
-          '<div class="cg-ws-card-name">'+world.name+'</div>'+
-          '<div class="cg-ws-card-prog">'+prog.done+' / '+prog.total+' territories</div>'+
-          '<div class="cg-ws-card-bar-wrap">'+
-            '<div class="cg-ws-card-bar" style="width:'+Math.round(pct*100)+'%;background:'+world.accent+'"></div>'+
-          '</div>'+
-        '</div>';
-
-      card.addEventListener('click', (function(wi_) {
-        return function() {
-          showWorldGlobe(container, wi_, sections, getSectionStatus, getSectionMasteryInfo,
-                         wasBossBeatenToday, focusSection, onBattle, onStudyGuide);
-        };
-      })(wi));
-
-      grid.appendChild(card);
+    // Build overworld nodes
+    var owNodes=WORLDS.map(function(w, wi){
+      var grp=sections.slice(wi*6, wi*6+6);
+      var prog=worldProgress(grp,getSS);
+      var st = prog.done===grp.length ? 'conquered' :
+               prog.done>0 ? 'in-progress' : 'not-started';
+      return {
+        id: wi, label: String(wi+1), sublabel: w.name,
+        status: st, beaten: false, isLocked: false,  // all worlds browseable
+      };
     });
 
-    root.appendChild(grid);
+    // Overworld title + map
+    var root=document.createElement('div');
+    root.className='cg-map-root';
+    container.appendChild(root);
+
+    var hdr=document.createElement('div');
+    hdr.className='cg-map-hdr';
+    hdr.innerHTML='<span class="cg-map-title">&#x2B22; WORLD MAP</span><span class="cg-map-sub">Choose your world</span>';
+    root.appendChild(hdr);
+
+    var mapArea=document.createElement('div');
+    mapArea.className='cg-map-area';
+    root.appendChild(mapArea);
+
+    buildSVGMap(mapArea, owNodes, currentWorld,
+      '#4a9ee8', '#080e20',
+      function(wi){
+        showWorldMap(container, wi, sections, getSS, getMI, getB, focus, onBattle, onSG);
+      }
+    );
   }
 
-  // ── SCREEN 2: World Globe ──────────────────────────────────────────────────
-  function showWorldGlobe(container, wi, sections, getSectionStatus, getSectionMasteryInfo,
-                          wasBossBeatenToday, focusSection, onBattle, onStudyGuide) {
+  // ── SCREEN 2: Per-world territory map ─────────────────────────────────────
+  function showWorldMap(container, wi, sections, getSS, getMI, getB, focus, onBattle, onSG) {
     container.innerHTML='';
     container.style.cssText=
       'position:relative;width:100%;height:100%;overflow:hidden;background:#02040a;'+
       'display:flex;flex-direction:column;';
 
     var world=WORLDS[wi];
-    var worldSections=sections.slice(wi*6, wi*6+6);
-    while(worldSections.length<6) worldSections.push({ id:'empty-'+wi+'-'+worldSections.length, name:'—' });
+    var wSections=sections.slice(wi*6, wi*6+6);
+    while(wSections.length<6) wSections.push({id:'empty-'+wi+'-'+wSections.length, name:'—'});
 
-    // ── Navigation bar ──────────────────────────────────────
+    // ── Nav bar ──
     var nav=document.createElement('div');
     nav.className='cg-wv-nav';
     nav.style.setProperty('--wa', world.accent);
 
-    var backBtn=document.createElement('button');
-    backBtn.className='cg-wv-back';
-    backBtn.innerHTML='&#8592; All Worlds';
-    backBtn.addEventListener('click', function() {
-      showWorldSelect(container, sections, getSectionStatus, getSectionMasteryInfo,
-                      wasBossBeatenToday, focusSection, onBattle, onStudyGuide);
+    var back=document.createElement('button');
+    back.className='cg-wv-back';
+    back.innerHTML='&#8592; All Worlds';
+    back.addEventListener('click',function(){
+      showWorldSelect(container, sections, getSS, getMI, getB, focus, onBattle, onSG);
     });
 
     var navTitle=document.createElement('div');
@@ -388,312 +493,64 @@ window.CcnaGlobe = (function () {
 
     var dots=document.createElement('div');
     dots.className='cg-wv-dots';
-    for(var di=0; di<6; di++) {
+    for(var di=0;di<6;di++){
       var dot=document.createElement('button');
       dot.className='cg-wv-dot'+(di===wi?' cg-wv-dot--active':'');
-      dot.style.setProperty('--dc', WORLDS[di].accent);
+      dot.style.setProperty('--dc',WORLDS[di].accent);
       dot.title=WORLDS[di].name;
-      dot.addEventListener('click', (function(di_) {
-        return function() {
-          showWorldGlobe(container, di_, sections, getSectionStatus, getSectionMasteryInfo,
-                         wasBossBeatenToday, focusSection, onBattle, onStudyGuide);
+      dot.addEventListener('click',(function(di_){
+        return function(){
+          showWorldMap(container, di_, sections, getSS, getMI, getB, focus, onBattle, onSG);
         };
       })(di));
       dots.appendChild(dot);
     }
 
-    nav.appendChild(backBtn);
-    nav.appendChild(navTitle);
-    nav.appendChild(dots);
+    nav.appendChild(back); nav.appendChild(navTitle); nav.appendChild(dots);
     container.appendChild(nav);
 
-    // ── Globe area ──────────────────────────────────────────
-    var globeDiv=document.createElement('div');
-    globeDiv.className='cg-wv-globe';
-    container.appendChild(globeDiv);
+    // ── Map area ──
+    var mapArea=document.createElement('div');
+    mapArea.className='cg-map-area';
+    container.appendChild(mapArea);
 
-    buildWorldGlobe(globeDiv, wi, worldSections, getSectionStatus, getSectionMasteryInfo,
-                    wasBossBeatenToday, focusSection, onBattle, onStudyGuide);
-  }
-
-  // ── Build Three.js world globe ─────────────────────────────────────────────
-  function buildWorldGlobe(container, wi, worldSections, getSectionStatus, getSectionMasteryInfo,
-                           wasBossBeatenToday, focusSection, onBattle, onStudyGuide) {
-    var world=WORLDS[wi];
-    container.style.cssText='position:relative;width:100%;flex:1;overflow:hidden;cursor:grab;';
-
-    // ── Texture ──
-    var texCanvas=document.createElement('canvas');
-    texCanvas.width=2048; texCanvas.height=1024;
-    drawWorldTexture(texCanvas, wi, worldSections, getSectionStatus, getSectionMasteryInfo,
-                     wasBossBeatenToday, focusSection);
-
-    // ── Renderer ──
-    var renderer=new THREE.WebGLRenderer({ antialias:true, alpha:false });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
-    renderer.setClearColor(0x02040a,1);
-    var cW=container.clientWidth||860;
-    var cH=container.clientHeight||520;
-    renderer.setSize(cW,cH);
-    renderer.domElement.style.display='block';
-    container.appendChild(renderer.domElement);
-
-    // ── Scene + camera ──
-    var scene=new THREE.Scene();
-    var camera=new THREE.PerspectiveCamera(42, cW/cH, 0.1, 200);
-    camera.position.z=3.0;
-
-    // ── Globe — MeshBasicMaterial (no lighting, full color fidelity) ──
-    var texture=new THREE.CanvasTexture(texCanvas);
-    texture.anisotropy=renderer.capabilities.getMaxAnisotropy();
-    var globe=new THREE.Mesh(
-      new THREE.SphereGeometry(1, 80, 80),
-      new THREE.MeshBasicMaterial({ map: texture })
-    );
-    scene.add(globe);
-
-    // ── Subtle atmosphere rim glow (world accent color) ──
-    var atmVert=[
-      'uniform vec3 viewVector;',
-      'uniform float c; uniform float p;',
-      'varying float intensity;',
-      'void main(){',
-      '  vec3 vN=normalize(normalMatrix*normal);',
-      '  vec3 vV=normalize(normalMatrix*viewVector);',
-      '  intensity=pow(max(0.0,c-dot(vN,vV)),p);',
-      '  gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);',
-      '}'
-    ].join('\n');
-    var atmFrag=[
-      'uniform vec3 glowColor;',
-      'varying float intensity;',
-      'void main(){vec3 g=glowColor*intensity;gl_FragColor=vec4(g,intensity*0.55);}'
-    ].join('\n');
-    var gc=hexToRgb(world.glow);
-    var atmMesh=new THREE.Mesh(
-      new THREE.SphereGeometry(1.13,64,64),
-      new THREE.ShaderMaterial({
-        uniforms:{
-          c:{value:0.12}, p:{value:5.5},
-          glowColor:{value:new THREE.Color(gc.r/255,gc.g/255,gc.b/255)},
-          viewVector:{value:camera.position.clone()}
-        },
-        vertexShader:atmVert, fragmentShader:atmFrag,
-        side:THREE.FrontSide, blending:THREE.AdditiveBlending,
-        transparent:true, depthWrite:false
-      })
-    );
-    scene.add(atmMesh);
-
-    // ── Starfield ──
-    var sp=new Float32Array(2800*3);
-    var rs=mkRng(54321);
-    for(var si=0;si<2800;si++){
-      var th=rs()*Math.PI*2, ph=Math.acos(2*rs()-1), r=45+rs()*20;
-      sp[si*3]=r*Math.sin(ph)*Math.cos(th);
-      sp[si*3+1]=r*Math.sin(ph)*Math.sin(th);
-      sp[si*3+2]=r*Math.cos(ph);
-    }
-    var sg=new THREE.BufferGeometry();
-    sg.setAttribute('position',new THREE.BufferAttribute(sp,3));
-    scene.add(new THREE.Points(sg,
-      new THREE.PointsMaterial({color:0xffffff,size:0.09,sizeAttenuation:true,transparent:true,opacity:0.75})));
-
-    // ── Tooltip ──
-    var tip=document.createElement('div');
-    tip.className='globe-tooltip';
-    container.appendChild(tip);
-
-    // ── Control buttons ──
-    var ctrlDiv=document.createElement('div');
-    ctrlDiv.style.cssText='position:absolute;top:12px;right:12px;display:flex;flex-direction:column;gap:6px;z-index:50;';
-    ctrlDiv.innerHTML=
-      '<button class="tmap-btn" id="gZoomIn" title="Zoom In">+</button>'+
-      '<button class="tmap-btn" id="gZoomOut" title="Zoom Out">&minus;</button>'+
-      '<button class="tmap-btn" id="gReset" title="Reset">&#8982;</button>'+
-      '<button class="tmap-btn" id="gSpin" title="Toggle Spin">&#9654;</button>';
-    container.appendChild(ctrlDiv);
-
-    // ── Legend ──
-    var legDiv=document.createElement('div');
-    legDiv.className='tmap-legend';
-    [['#737a8b','Not Started'],['#a84848','In Progress'],['#c49a28','Conquered'],['#2aad5e','Beaten Today ✓']].forEach(function(it){
-      var d=document.createElement('div'); d.className='tmap-leg-item';
-      d.innerHTML='<div class="tmap-leg-dot" style="background:'+it[0]+'"></div>'+it[1];
-      legDiv.appendChild(d);
-    });
-    container.appendChild(legDiv);
-
-    // ── Interaction state ──
-    var rotX=0.0, rotY=-0.6;
-    var velX=0, velY=0.002;
-    var autoSpin=true, dragging=false, dragMoved=false;
-    var prevX=0, prevY=0, targetZ=3.0, spinTimer=null;
-
-    function applyRot() {
-      globe.rotation.x=rotX; globe.rotation.y=rotY;
-      atmMesh.rotation.x=rotX; atmMesh.rotation.y=rotY;
-    }
-    applyRot();
-
-    var glCanvas=renderer.domElement;
-
-    glCanvas.addEventListener('pointerdown', function(e) {
-      glCanvas.setPointerCapture(e.pointerId);
-      dragging=true; dragMoved=false; prevX=e.clientX; prevY=e.clientY;
-      velX=0; velY=0; autoSpin=false; clearTimeout(spinTimer);
-      container.style.cursor='grabbing'; e.preventDefault();
+    // Build territory nodes
+    var curIdx=currentNodeIdx(wSections, getSS, getB, focus);
+    var tNodes=wSections.map(function(sec,idx){
+      var st=getSS(sec.id);
+      var beat=getB(sec.id);
+      var numStr=String(sec.id).replace(/[^0-9]/g,'')||String(idx+1);
+      var locked= st==='locked' || (idx>0 && getSS(wSections[idx-1].id)==='locked'
+                                         && getSS(wSections[idx-1].id)!=='not-started'
+                                         && !wSections[idx-1].id.toString().startsWith('empty'));
+      // Simpler lock: if the previous territory is locked, this one is too
+      // But not-started ≠ locked for the first unlocked territory
+      var actuallyLocked = (st==='locked');
+      return {
+        id: sec.id, label: numStr,
+        sublabel: sec.name||'',
+        status: beat?'beaten':st, beaten: beat,
+        isLocked: actuallyLocked,
+      };
     });
 
-    glCanvas.addEventListener('pointermove', function(e) {
-      if(!dragging){ doHover(e); return; }
-      var dx=e.clientX-prevX, dy=e.clientY-prevY;
-      if(Math.abs(dx)+Math.abs(dy)>2) dragMoved=true;
-      velY=dx*0.007; velX=dy*0.007;
-      rotY+=velY; rotX=Math.max(-1.35,Math.min(1.35,rotX+velX));
-      prevX=e.clientX; prevY=e.clientY; applyRot(); e.preventDefault();
-    });
-
-    glCanvas.addEventListener('pointerup', function(e) {
-      dragging=false; container.style.cursor='grab';
-      if(!dragMoved) doClick(e);
-      spinTimer=setTimeout(function(){ autoSpin=true; },5000);
-    });
-
-    glCanvas.addEventListener('wheel', function(e) {
-      targetZ=Math.max(1.7,Math.min(7.0,targetZ+e.deltaY*0.004));
-      e.preventDefault();
-    }, { passive:false });
-
-    setTimeout(function() {
-      var bIn=document.getElementById('gZoomIn');
-      var bOut=document.getElementById('gZoomOut');
-      var bRst=document.getElementById('gReset');
-      var bSpin=document.getElementById('gSpin');
-      if(bIn)   bIn.onclick=function(){targetZ=Math.max(1.7,targetZ-0.6);};
-      if(bOut)  bOut.onclick=function(){targetZ=Math.min(7.0,targetZ+0.6);};
-      if(bRst)  bRst.onclick=function(){targetZ=3.0;rotX=0.0;rotY=-0.6;velX=0;velY=0;};
-      if(bSpin) bSpin.onclick=function(){autoSpin=!autoSpin;bSpin.style.color=autoSpin?world.accent:'';};
-    },50);
-
-    // ── Raycaster ──
-    var raycaster=new THREE.Raycaster();
-    var mouse2=new THREE.Vector2();
-
-    function getHitUV(e) {
-      var rect=glCanvas.getBoundingClientRect();
-      mouse2.x=((e.clientX-rect.left)/rect.width)*2-1;
-      mouse2.y=((e.clientY-rect.top)/rect.height)*-2+1;
-      raycaster.setFromCamera(mouse2,camera);
-      var hits=raycaster.intersectObject(globe);
-      return hits.length?hits[0].uv:null;
-    }
-
-    function doHover(e) {
-      var uv=getHitUV(e);
-      if(!uv){tip.style.display='none';return;}
-      var idx=uvToWorldSection(uv.x,1-uv.y,wi);
-      if(idx<0||idx>=worldSections.length){tip.style.display='none';return;}
-      var sec=worldSections[idx];
-      if(!sec||sec.id.toString().indexOf('empty')===0){tip.style.display='none';return;}
-      var status=getSectionStatus(sec.id);
-      var mInfo=getSectionMasteryInfo(sec.id);
-      var beaten=wasBossBeatenToday(sec.id);
-      var stLbl={locked:'🔒 Locked','not-started':'⬜ Not Started','in-progress':'🔴 In Progress',
-                 conquered:'🟡 Conquered',focus:'🎯 Focus'}[status]||status;
-      var avgM=Math.round(mInfo.avgMastery||0);
-      var mLbl=['New','Learning','Familiar','Practiced','Strong','Mastered'][avgM]||'New';
-      var mPct=mInfo.total?Math.round((mInfo.mastered||0)/mInfo.total*100):0;
-      var stars='★'.repeat(avgM)+'☆'.repeat(Math.max(0,5-avgM));
-      var mColor=['#6b7280','#ef4444','#f59e0b','#22c55e','#06b6d4','#818cf8'][avgM]||'#6b7280';
-
-      tip.innerHTML=
-        '<div class="globe-tip-title">'+(sec.name||sec.id)+'</div>'+
-        '<div class="globe-tip-mastery-row">'+
-          '<span style="color:'+mColor+';font-size:14px;letter-spacing:1px">'+stars+'</span>'+
-          '<span style="color:'+mColor+';font-weight:700;margin-left:6px">'+mLbl+'</span>'+
-          '<span style="color:#64748b;margin-left:4px">('+avgM+'/5)</span>'+
-        '</div>'+
-        '<div class="globe-tip-bar-wrap"><div class="globe-tip-bar" style="width:'+mPct+'%;background:'+mColor+'"></div></div>'+
-        '<div class="globe-tip-sub">'+(mInfo.mastered||0)+' / '+(mInfo.total||0)+' cards mastered ('+mPct+'%)</div>'+
-        '<div class="globe-tip-tags">'+
-          '<span class="globe-tip-tag">'+stLbl+'</span>'+
-          (beaten?'<span class="globe-tip-tag globe-tip-beaten">✓ Beaten Today</span>':'')+
-          ((mInfo.dueCount||0)>0?'<span class="globe-tip-tag" style="color:#f59e0b">'+mInfo.dueCount+' due</span>':'')+
-        '</div>'+
-        '<div class="globe-tip-hint">Click to study this territory</div>';
-
-      var rect=glCanvas.getBoundingClientRect();
-      var tx=e.clientX-rect.left+16, ty=e.clientY-rect.top;
-      if(tx+230>cW) tx=e.clientX-rect.left-242;
-      tip.style.left=Math.max(4,tx)+'px';
-      tip.style.top=Math.max(4,ty-80)+'px';
-      tip.style.display='block';
-    }
-
-    function doClick(e) {
-      var uv=getHitUV(e);
-      if(!uv) return;
-      var idx=uvToWorldSection(uv.x,1-uv.y,wi);
-      if(idx<0||idx>=worldSections.length) return;
-      var sec=worldSections[idx];
-      if(!sec||sec.id.toString().indexOf('empty')===0) return;
-      var status=getSectionStatus(sec.id);
-      tip.style.display='none';
-      if(status==='locked'){
-        if(typeof Toast!=='undefined') Toast.show('Complete previous sections to unlock!','warning');
-        return;
+    buildSVGMap(mapArea, tNodes, curIdx, world.accent, world.base,
+      function(idx){
+        var sec=wSections[idx];
+        if(!sec||sec.id.toString().startsWith('empty')) return;
+        var st=getSS(sec.id);
+        if(st==='locked'){
+          if(typeof Toast!=='undefined') Toast.show('Complete previous sections to unlock!','warning');
+          return;
+        }
+        onSG(sec.id);
       }
-      onStudyGuide(sec.id);
-    }
-
-    // ── Animation loop ──
-    var animId=null;
-    function animate() {
-      animId=requestAnimationFrame(animate);
-      if(!dragging){
-        if(autoSpin){ velY=0.0025; velX*=0.95; }
-        else { velX*=0.92; velY*=0.92; }
-        rotY+=velY; rotX=Math.max(-1.35,Math.min(1.35,rotX+velX));
-        applyRot();
-      }
-      camera.position.z+=(targetZ-camera.position.z)*0.1;
-      atmMesh.material.uniforms.viewVector.value=camera.position.clone();
-      renderer.render(scene,camera);
-    }
-    animate();
-
-    function onResize() {
-      cW=container.clientWidth||860; cH=container.clientHeight||520;
-      camera.aspect=cW/cH; camera.updateProjectionMatrix();
-      renderer.setSize(cW,cH);
-    }
-    window.addEventListener('resize',onResize);
-
-    var obs=new MutationObserver(function(muts){
-      muts.forEach(function(m){
-        m.removedNodes.forEach(function(n){
-          if(n===glCanvas||!container.parentNode){
-            cancelAnimationFrame(animId);
-            renderer.dispose();
-            window.removeEventListener('resize',onResize);
-            obs.disconnect();
-          }
-        });
-      });
-    });
-    obs.observe(container,{childList:true});
+    );
   }
 
   // ── Public API ─────────────────────────────────────────────────────────────
-  function render(container, sections, getSectionStatus, getSectionMasteryInfo,
-                  wasBossBeatenToday, focusSection, onBattle, onStudyGuide) {
-    if(typeof THREE==='undefined') {
-      container.innerHTML='<div style="color:#ef4444;padding:40px;text-align:center;font-family:monospace">Three.js not loaded. Add the script tag to index.html.</div>';
-      return;
-    }
-    showWorldSelect(container, sections, getSectionStatus, getSectionMasteryInfo,
-                    wasBossBeatenToday, focusSection, onBattle, onStudyGuide);
+  function render(container, sections, getSS, getMI, getB, focus, onBattle, onSG) {
+    showWorldSelect(container, sections, getSS, getMI, getB, focus, onBattle, onSG);
   }
 
   return { render: render };
