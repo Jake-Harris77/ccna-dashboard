@@ -209,19 +209,19 @@ window.CcnaGlobe = (function () {
       }
     });
 
-    // ── Continent name labels — big, glowing cyan ──
+    // ── Continent name labels — in the ocean band ABOVE each continent ──
     CONT_LAYOUT.forEach(function (layout, ci) {
-      ctx.font = 'bold 15px "Courier New",monospace';
+      ctx.font = 'bold 13px "Courier New",monospace';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       var lbl = CONT_NAMES[ci].toUpperCase();
-      var labelY = layout.cy - layout.hh + 18;
-      // Glow layer
+      // Place label in the ocean gap above the continent, not on territories
+      var labelY = layout.cy - layout.hh - 14;
+      // Subtle glow — keep shadowBlur small so it stays in the ocean band
       ctx.shadowColor = '#00e8ff';
-      ctx.shadowBlur = 14;
+      ctx.shadowBlur = 8;
       ctx.fillStyle = '#00e8ff';
       ctx.fillText(lbl, layout.cx, labelY);
-      ctx.fillText(lbl, layout.cx, labelY); // double pass = stronger glow
       ctx.shadowBlur = 0;
       ctx.shadowColor = 'transparent';
     });
