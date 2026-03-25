@@ -993,5 +993,13 @@
     return a;
   }
 
-  window.AnkiEngine = { init: init, startBattle: startBossBattle };
+  // Called by FirebaseSync after cloud data is restored to localStorage
+  function reloadState () {
+    game = loadGame();
+    unlockAllSections();
+    decayOverdueCards();
+    renderMap();
+  }
+
+  window.AnkiEngine = { init: init, startBattle: startBossBattle, reloadState: reloadState };
 })();

@@ -383,9 +383,8 @@ window.CcnaGlobe = (function () {
       );
     }
 
-    // Very subtle edge-only glow — keep c very small so only the silhouette edge glows
+    // Atmosphere mesh kept for animation loop refs — not added to scene (no blue glow)
     var atmOuter = makeAtm(1.10, 0.08, 7.0, 0x1a55cc, THREE.FrontSide);
-    scene.add(atmOuter);
 
     // ── Starfield ───────────────────────────────────────────
     var starCount = 2800;

@@ -104,7 +104,9 @@ var FirebaseSync = (function () {
   }
 
   // ── Pull cloud state into localStorage ────────────────────
+  let pulling = false; // prevent stale saves from racing with a restore
   async function pullFromCloud () {
+    pulling = true;
     const [ankiSnap, quizSnap] = await Promise.all([
       ankiDoc().get(),
       quizDoc().get(),
@@ -118,6 +120,8 @@ var FirebaseSync = (function () {
       // Keep whichever has more XP
       if ((cloudAnki.xp || 0) > (localAnki.xp || 0)) {
         saveLocal(ANKI_KEY, cloudAnki);
+        // Reload AnkiEngine in-memory state so it doesn't overwrite the restored data
+        if (typeof AnkiEngine !== 'undefined' && AnkiEngine.reloadState) AnkiEngine.reloadState();
       } else if ((localAnki.xp || 0) > (cloudAnki.xp || 0)) {
         // Local wins — push it to cloud
         await ankiDoc().set({ state: localAnki, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
@@ -125,6 +129,8 @@ var FirebaseSync = (function () {
       // If equal XP, keep local (no-op)
     } else if (cloudAnki && !localAnki) {
       saveLocal(ANKI_KEY, cloudAnki);
+      // Reload AnkiEngine in-memory state so it doesn't overwrite the restored data
+      if (typeof AnkiEngine !== 'undefined' && AnkiEngine.reloadState) AnkiEngine.reloadState();
     } else if (localAnki && !cloudAnki) {
       await ankiDoc().set({ state: localAnki, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
     }
@@ -155,11 +161,13 @@ var FirebaseSync = (function () {
         level: levelFromXP(finalAnki.xp || 0),
       }, { merge: true });
     }
+
+    pulling = false;
   }
 
   // ── Push to cloud (debounced) ─────────────────────────────
   function saveAnki () {
-    if (!syncEnabled) return;
+    if (!syncEnabled || pulling) return;
     debouncedSave();
   }
 
