@@ -91,12 +91,62 @@ window.CcnaGlobe = (function () {
     return Math.min(last+1, wSections.length-1);
   }
 
+  // ── Tooltip HTML builder ───────────────────────────────────────────────────
+  function buildTipHTML(node, isOverworld) {
+    var name = node.secName || node.sublabel || node.label;
+    if(node.isLocked) {
+      return '<div class="cg-tip-title">'+name+'</div>'+
+             '<div class="cg-tip-locked">🔒 Complete previous sections to unlock</div>';
+    }
+    var mi = node.mInfo || {};
+    var avgM = Math.min(5, Math.round(mi.avgMastery || 0));
+    var mLabels = ['New','Learning','Familiar','Practiced','Strong','Mastered'];
+    var mColors  = ['#6b7280','#ef4444','#f59e0b','#22c55e','#06b6d4','#818cf8'];
+    var mLbl   = mLabels[avgM] || 'New';
+    var mColor = mColors[avgM] || '#6b7280';
+    var mPct   = mi.total ? Math.round((mi.mastered||0)/mi.total*100) : 0;
+    var stars  = '★'.repeat(avgM)+'☆'.repeat(Math.max(0,5-avgM));
+    var stMap  = { locked:'🔒 Locked','not-started':'⬜ Not Started','in-progress':'🔴 In Progress',
+                   conquered:'🟡 Conquered', decayed:'🟡 Review Due', beaten:'✅ Beaten Today', focus:'🎯 Focus' };
+    var stLbl = stMap[node.status] || node.status || '—';
+
+    if(isOverworld) {
+      var prog = node.worldProg || { done:0, total:6 };
+      var pPct = prog.total ? Math.round(prog.done/prog.total*100) : 0;
+      return '<div class="cg-tip-title">'+name+'</div>'+
+        '<div class="cg-tip-tags">'+
+          '<span class="cg-tip-tag">'+stLbl+'</span>'+
+          ((mi.dueCount||0)>0?'<span class="cg-tip-tag cg-tip-due">'+mi.dueCount+' due</span>':'')+
+        '</div>'+
+        '<div class="cg-tip-row"><span style="color:'+mColor+';font-size:13px;letter-spacing:1px">'+stars+'</span>'+
+          ' <span style="color:'+mColor+';font-weight:700">'+mLbl+'</span>'+
+          ' <span style="color:#64748b">('+avgM+'/5)</span></div>'+
+        '<div class="cg-tip-bar-wrap"><div class="cg-tip-bar" style="width:'+pPct+'%;background:'+mColor+'"></div></div>'+
+        '<div class="cg-tip-sub">'+prog.done+' / '+prog.total+' territories conquered</div>'+
+        '<div class="cg-tip-sub">'+(mi.mastered||0)+' / '+(mi.total||0)+' total cards mastered</div>'+
+        '<div class="cg-tip-hint">Click to explore this world</div>';
+    }
+    return '<div class="cg-tip-title">'+name+'</div>'+
+      '<div class="cg-tip-tags">'+
+        '<span class="cg-tip-tag">'+stLbl+'</span>'+
+        (node.beaten?'<span class="cg-tip-tag cg-tip-beaten">✓ Beaten Today</span>':'')+
+        ((mi.dueCount||0)>0?'<span class="cg-tip-tag cg-tip-due">'+mi.dueCount+' due</span>':'')+
+      '</div>'+
+      '<div class="cg-tip-row"><span style="color:'+mColor+';font-size:13px;letter-spacing:1px">'+stars+'</span>'+
+        ' <span style="color:'+mColor+';font-weight:700">'+mLbl+'</span>'+
+        ' <span style="color:#64748b">('+avgM+'/5)</span></div>'+
+      '<div class="cg-tip-bar-wrap"><div class="cg-tip-bar" style="width:'+mPct+'%;background:'+mColor+'"></div></div>'+
+      '<div class="cg-tip-sub">'+(mi.mastered||0)+' / '+(mi.total||0)+' cards mastered ('+mPct+'%)</div>'+
+      '<div class="cg-tip-hint">Click to study this territory</div>';
+  }
+
   // ── SVG map builder ────────────────────────────────────────────────────────
-  // nodes: [{id, label, sublabel, status, beaten, isLocked}]
+  // nodes: [{id, label, sublabel, status, beaten, isLocked, mInfo, secName, worldProg?}]
   // currentIdx: which node gets the YOU-ARE-HERE marker (-1 = none)
   // accent / base: color strings
   // onNodeClick(idx): callback
-  function buildSVGMap(wrapper, nodes, currentIdx, accent, base, onNodeClick) {
+  // isOverworld: bool — changes tooltip content
+  function buildSVGMap(wrapper, nodes, currentIdx, accent, base, onNodeClick, isOverworld) {
     var NS = 'http://www.w3.org/2000/svg';
 
     // ── SVG root ──
@@ -105,6 +155,26 @@ window.CcnaGlobe = (function () {
     svg.setAttribute('preserveAspectRatio','xMidYMid meet');
     svg.style.cssText='width:100%;height:100%;display:block;';
     wrapper.appendChild(svg);
+
+    // ── Tooltip div (HTML, absolutely positioned over SVG) ──
+    var tip = document.createElement('div');
+    tip.className='cg-map-tip';
+    tip.style.display='none';
+    wrapper.appendChild(tip);
+
+    // Reposition tooltip on wrapper mousemove
+    wrapper.addEventListener('mousemove', function(e) {
+      if(tip.style.display==='none') return;
+      var rect = wrapper.getBoundingClientRect();
+      var tx = e.clientX - rect.left + 16;
+      var ty = e.clientY - rect.top - 20;
+      var tw = tip.offsetWidth || 220;
+      var th = tip.offsetHeight || 140;
+      if(tx + tw > rect.width - 8)  tx = e.clientX - rect.left - tw - 16;
+      if(ty + th > rect.height - 8) ty = e.clientY - rect.top - th - 8;
+      tip.style.left = Math.max(4, tx)+'px';
+      tip.style.top  = Math.max(4, ty)+'px';
+    });
 
     // ── Defs: filters + gradients + animation ──
     var defs = document.createElementNS(NS,'defs');
@@ -397,16 +467,33 @@ window.CcnaGlobe = (function () {
         nodeG.appendChild(markerG);
       }
 
-      // Hover + click
+      // Hover + tooltip + click
+      nodeG.addEventListener('mouseenter', (function(n_, fc_, ib_){
+        return function(e){
+          if(!n_.isLocked){
+            fc_.setAttribute('stroke-width', ib_?'4':'3.5');
+            fc_.setAttribute('fill', blend(fillColor,'#ffffff',0.06));
+          }
+          tip.innerHTML = buildTipHTML(n_, isOverworld);
+          tip.style.display = 'block';
+          // Initial position
+          var rect = wrapper.getBoundingClientRect();
+          var tx = e.clientX - rect.left + 16;
+          var ty = e.clientY - rect.top - 20;
+          tip.style.left = Math.max(4, tx)+'px';
+          tip.style.top  = Math.max(4, ty)+'px';
+        };
+      })(node, circle, isBoss));
+
+      nodeG.addEventListener('mouseleave', (function(fc_, ib_){
+        return function(){
+          fc_.setAttribute('stroke-width', ib_?'3':'2.5');
+          fc_.setAttribute('fill', fillColor);
+          tip.style.display = 'none';
+        };
+      })(circle, isBoss));
+
       if(!node.isLocked) {
-        nodeG.addEventListener('mouseenter', function(){
-          circle.setAttribute('stroke-width', isBoss?'4':'3.5');
-          circle.setAttribute('fill', blend(fillColor,'#ffffff',0.06));
-        });
-        nodeG.addEventListener('mouseleave', function(){
-          circle.setAttribute('stroke-width', isBoss?'3':'2.5');
-          circle.setAttribute('fill', fillColor);
-        });
         nodeG.addEventListener('click', function(){ onNodeClick(idx); });
       }
 
@@ -429,15 +516,28 @@ window.CcnaGlobe = (function () {
       if(hasIP){currentWorld=wi;break;}
     }
 
-    // Build overworld nodes
+    // Build overworld nodes (with aggregate mastery info per world)
     var owNodes=WORLDS.map(function(w, wi){
       var grp=sections.slice(wi*6, wi*6+6);
       var prog=worldProgress(grp,getSS);
       var st = prog.done===grp.length ? 'conquered' :
                prog.done>0 ? 'in-progress' : 'not-started';
+      // Aggregate mastery across all territories in this world
+      var totalCards=0, masteredCards=0, dueCards=0, masterySum=0;
+      grp.forEach(function(s){
+        var mi=getMI(s.id);
+        totalCards   += (mi.total    ||0);
+        masteredCards+= (mi.mastered ||0);
+        dueCards     += (mi.dueCount ||0);
+        masterySum   += (mi.avgMastery||0);
+      });
       return {
         id: wi, label: String(wi+1), sublabel: w.name,
-        status: st, beaten: false, isLocked: false,  // all worlds browseable
+        status: st, beaten: false, isLocked: false,
+        secName: w.name,
+        worldProg: prog,
+        mInfo: { total:totalCards, mastered:masteredCards, dueCount:dueCards,
+                 avgMastery: grp.length ? masterySum/grp.length : 0 },
       };
     });
 
@@ -459,7 +559,8 @@ window.CcnaGlobe = (function () {
       '#4a9ee8', '#080e20',
       function(wi){
         showWorldMap(container, wi, sections, getSS, getMI, getB, focus, onBattle, onSG);
-      }
+      },
+      true  // isOverworld
     );
   }
 
@@ -519,18 +620,16 @@ window.CcnaGlobe = (function () {
     var tNodes=wSections.map(function(sec,idx){
       var st=getSS(sec.id);
       var beat=getB(sec.id);
+      var mi=getMI(sec.id);
       var numStr=String(sec.id).replace(/[^0-9]/g,'')||String(idx+1);
-      var locked= st==='locked' || (idx>0 && getSS(wSections[idx-1].id)==='locked'
-                                         && getSS(wSections[idx-1].id)!=='not-started'
-                                         && !wSections[idx-1].id.toString().startsWith('empty'));
-      // Simpler lock: if the previous territory is locked, this one is too
-      // But not-started ≠ locked for the first unlocked territory
       var actuallyLocked = (st==='locked');
       return {
         id: sec.id, label: numStr,
         sublabel: sec.name||'',
+        secName: sec.name||sec.id,
         status: beat?'beaten':st, beaten: beat,
         isLocked: actuallyLocked,
+        mInfo: mi,
       };
     });
 
@@ -544,7 +643,8 @@ window.CcnaGlobe = (function () {
           return;
         }
         onSG(sec.id);
-      }
+      },
+      false  // isOverworld
     );
   }
 
