@@ -33,22 +33,22 @@ window.CcnaGlobe = (function () {
     '#0d3d4f', // 5 cyan
   ];
 
-  // Mastery-level territory colors (0–5)
+  // Mastery-level territory colors (0–5) — vivid enough for MeshBasicMaterial
   var MASTERY_FILL = [
-    '#22243a', // 0 new
-    '#3d1a1a', // 1 learning
-    '#3d2a0a', // 2 familiar
-    '#153d15', // 3 practiced
-    '#0a2d3d', // 4 strong
-    '#1a1f5a', // 5 mastered
+    '#2a2f50', // 0 new       — dark blue-slate
+    '#5a2020', // 1 learning  — dark red
+    '#5a3f10', // 2 familiar  — dark amber
+    '#1a5a1a', // 3 practiced — dark green
+    '#0d4d60', // 4 strong    — dark teal
+    '#2a2a80', // 5 mastered  — deep blue
   ];
   var MASTERY_STROKE = [
-    'rgba(255,255,255,0.08)',
-    'rgba(239,68,68,0.6)',
-    'rgba(245,158,11,0.6)',
-    'rgba(34,197,94,0.55)',
-    'rgba(6,182,212,0.65)',
-    'rgba(99,102,241,0.7)',
+    'rgba(255,255,255,0.12)',
+    'rgba(239,68,68,0.7)',
+    'rgba(245,158,11,0.7)',
+    'rgba(34,197,94,0.65)',
+    'rgba(6,182,212,0.75)',
+    'rgba(129,140,248,0.8)',
   ];
 
   // ── Seeded RNG ─────────────────────────────────────────────────────────────
@@ -167,21 +167,20 @@ window.CcnaGlobe = (function () {
       // ── Fill ──
       var fillBase;
       if (status === 'locked') {
-        fillBase = '#111420';
+        fillBase = '#141824';
       } else if (beaten) {
-        fillBase = '#0d3322';
+        fillBase = '#1a5c38';
       } else if (status === 'conquered' || status === 'in-progress') {
         fillBase = MASTERY_FILL[Math.min(mastery, 5)];
       } else {
-        fillBase = CONT_BASE[ci];
-        // Blend dark for not-started
-        fillBase = '#181c2e';
+        // not-started: blend continent base color with dark
+        fillBase = '#252b42';
       }
 
       var bounds = polyBounds(poly);
       var grad = ctx.createLinearGradient(bounds.x1, bounds.y1, bounds.x1, bounds.y2);
-      grad.addColorStop(0, lightenHex(fillBase, 0.22));
-      grad.addColorStop(1, darkenHex(fillBase, 0.18));
+      grad.addColorStop(0, lightenHex(fillBase, 0.45));
+      grad.addColorStop(1, darkenHex(fillBase, 0.12));
       ctx.fillStyle = grad;
       ctx.fill();
 
@@ -383,24 +382,11 @@ window.CcnaGlobe = (function () {
     var camera = new THREE.PerspectiveCamera(42, cW / cH, 0.1, 200);
     camera.position.z = 3.0;
 
-    // ── Lighting ────────────────────────────────────────────
-    scene.add(new THREE.AmbientLight(0x334466, 1.0));
-    var sun = new THREE.DirectionalLight(0x8ab4ff, 1.4);
-    sun.position.set(5, 3, 5);
-    scene.add(sun);
-    var fill = new THREE.DirectionalLight(0xffffff, 0.25);
-    fill.position.set(-4, -2, 2);
-    scene.add(fill);
-
-    // ── Globe mesh ──────────────────────────────────────────
+    // ── Globe mesh (MeshBasicMaterial — no lighting math, texture renders exact) ──
     var globeGeo = new THREE.SphereGeometry(1, 80, 80);
     var texture  = new THREE.CanvasTexture(texCanvas);
     texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
-    var globeMat = new THREE.MeshPhongMaterial({
-      map: texture,
-      specular:  new THREE.Color(0x1a3366),
-      shininess: 22,
-    });
+    var globeMat = new THREE.MeshBasicMaterial({ map: texture });
     var globe = new THREE.Mesh(globeGeo, globeMat);
     scene.add(globe);
 
@@ -412,7 +398,7 @@ window.CcnaGlobe = (function () {
       'void main(){',
       '  vec3 vN = normalize(normalMatrix * normal);',
       '  vec3 vV = normalize(normalMatrix * viewVector);',
-      '  intensity = pow(c - dot(vN,vV), p);',
+      '  intensity = pow(max(0.0, c - dot(vN,vV)), p);',
       '  gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);',
       '}'
     ].join('\n');
@@ -628,7 +614,6 @@ window.CcnaGlobe = (function () {
 
     // ── Animation loop ───────────────────────────────────────
     var animId = null;
-    var clock  = typeof THREE !== 'undefined' ? new THREE.Clock() : null;
 
     function animate() {
       animId = requestAnimationFrame(animate);
