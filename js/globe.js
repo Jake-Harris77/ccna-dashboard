@@ -1,0 +1,690 @@
+// ─────────────────────────────────────────────────────────────────────────────
+//  CcnaGlobe — Full 3-D WebGL globe (Three.js r128)
+//  Equirectangular canvas texture → SphereGeometry
+//  Drag-to-rotate with momentum, scroll-to-zoom, click + hover via Raycaster
+// ─────────────────────────────────────────────────────────────────────────────
+window.CcnaGlobe = (function () {
+  'use strict';
+
+  // ── Continent layout on 2048×1024 equirectangular texture ──────────────────
+  // 6 continents, each 3 cols × 2 rows = 6 territories
+  // Positions chosen so each continent is clearly visible as the globe rotates
+  var CONT_LAYOUT = [
+    { cx: 310, cy: 250, hw: 195, hh: 148 },   // 0 OSI Foundations  (upper-left)
+    { cx: 870, cy: 220, hw: 185, hh: 142 },   // 1 Network Basics   (upper-center)
+    { cx: 320, cy: 650, hw: 190, hh: 145 },   // 2 Routing          (lower-left)
+    { cx: 870, cy: 650, hw: 190, hh: 145 },   // 3 Switching        (lower-center)
+    { cx: 1450, cy: 240, hw: 200, hh: 148 },  // 4 Security & WAN   (upper-right)
+    { cx: 1450, cy: 650, hw: 195, hh: 145 },  // 5 Advanced Topics  (lower-right)
+  ];
+
+  var CONT_NAMES = [
+    'OSI Foundations', 'Network Basics', 'Routing',
+    'Switching', 'Security & WAN', 'Advanced Topics'
+  ];
+
+  // Base fill colors per continent (dark, vivid)
+  var CONT_BASE = [
+    '#3b1f6e', // 0 purple
+    '#1a3a6e', // 1 blue
+    '#1a4a28', // 2 green
+    '#4a2e10', // 3 amber
+    '#5a1a1a', // 4 red
+    '#0d3d4f', // 5 cyan
+  ];
+
+  // Mastery-level territory colors (0–5)
+  var MASTERY_FILL = [
+    '#22243a', // 0 new
+    '#3d1a1a', // 1 learning
+    '#3d2a0a', // 2 familiar
+    '#153d15', // 3 practiced
+    '#0a2d3d', // 4 strong
+    '#1a1f5a', // 5 mastered
+  ];
+  var MASTERY_STROKE = [
+    'rgba(255,255,255,0.08)',
+    'rgba(239,68,68,0.6)',
+    'rgba(245,158,11,0.6)',
+    'rgba(34,197,94,0.55)',
+    'rgba(6,182,212,0.65)',
+    'rgba(99,102,241,0.7)',
+  ];
+
+  // ── Seeded RNG ─────────────────────────────────────────────────────────────
+  function mkRng(seed) {
+    var s = seed | 0;
+    return function () {
+      s = (Math.imul(s, 1664525) + 1013904223) | 0;
+      return (s >>> 0) / 4294967296;
+    };
+  }
+
+  // ── Build organic territory polygons for one continent ─────────────────────
+  // Returns array of 6 polygon arrays. Each polygon = [{x,y}, …] (8 vertices)
+  function buildContPolys(layout, ci) {
+    var cx = layout.cx, cy = layout.cy, hw = layout.hw, hh = layout.hh;
+    var rng = mkRng(ci * 7919 + 42);
+
+    // 4×3 point grid for 3-col × 2-row territory divisions
+    var GX = 4, GY = 3;
+    var pts = [];
+    for (var gy = 0; gy < GY; gy++) {
+      for (var gx = 0; gx < GX; gx++) {
+        var bx = cx - hw + (gx / (GX - 1)) * hw * 2;
+        var by = cy - hh + (gy / (GY - 1)) * hh * 2;
+        var jx = (gx > 0 && gx < GX - 1) ? (rng() - 0.5) * hw * 0.32 : 0;
+        var jy = (gy > 0 && gy < GY - 1) ? (rng() - 0.5) * hh * 0.32 : 0;
+        pts.push({ x: bx + jx, y: by + jy });
+      }
+    }
+
+    function pt(gx, gy) { return pts[gy * GX + gx]; }
+    function mid(a, b) { return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }; }
+
+    var polys = [];
+    for (var row = 0; row < 2; row++) {
+      for (var col = 0; col < 3; col++) {
+        var tl = pt(col, row), tr = pt(col + 1, row);
+        var bl = pt(col, row + 1), br = pt(col + 1, row + 1);
+        polys.push([
+          mid(tl, tr), tr, mid(tr, br), br,
+          mid(br, bl), bl, mid(bl, tl), tl,
+        ]);
+      }
+    }
+    return polys;
+  }
+
+  // Pre-computed polygon data
+  var _allPolys = null;
+  var _allContIdx = [];
+
+  function ensurePolys() {
+    if (_allPolys) return;
+    _allPolys = [];
+    _allContIdx = [];
+    CONT_LAYOUT.forEach(function (layout, ci) {
+      buildContPolys(layout, ci).forEach(function (poly) {
+        _allPolys.push(poly);
+        _allContIdx.push(ci);
+      });
+    });
+  }
+
+  // ── Canvas texture drawing ─────────────────────────────────────────────────
+  function drawTexture(canvas, sections, getSectionStatus, getSectionMasteryInfo, wasBossBeatenToday, focusSection) {
+    ensurePolys();
+    var W = canvas.width, H = canvas.height;
+    var ctx = canvas.getContext('2d');
+
+    // Deep ocean gradient
+    var ocean = ctx.createLinearGradient(0, 0, 0, H);
+    ocean.addColorStop(0,   '#060d1f');
+    ocean.addColorStop(0.5, '#091628');
+    ocean.addColorStop(1,   '#040b18');
+    ctx.fillStyle = ocean;
+    ctx.fillRect(0, 0, W, H);
+
+    // Subtle lat/lon grid lines
+    ctx.strokeStyle = 'rgba(40,80,160,0.18)';
+    ctx.lineWidth = 1;
+    for (var li = 1; li < 8; li++) {
+      ctx.beginPath(); ctx.moveTo(0, li/8*H); ctx.lineTo(W, li/8*H); ctx.stroke();
+    }
+    for (var lj = 1; lj < 16; lj++) {
+      ctx.beginPath(); ctx.moveTo(lj/16*W, 0); ctx.lineTo(lj/16*W, H); ctx.stroke();
+    }
+
+    // Ocean shimmer (random dots)
+    var rng0 = mkRng(9999);
+    for (var d = 0; d < 300; d++) {
+      var dx = rng0() * W, dy = rng0() * H;
+      var dr = 1 + rng0() * 3;
+      ctx.beginPath();
+      ctx.arc(dx, dy, dr, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(100,180,255,' + (0.03 + rng0() * 0.06) + ')';
+      ctx.fill();
+    }
+
+    // ── Draw territories ───────────────────────────────────
+    sections.forEach(function (sec, idx) {
+      if (!_allPolys || idx >= _allPolys.length) return;
+      var poly = _allPolys[idx];
+      var ci   = _allContIdx[idx];
+      var status  = getSectionStatus(sec.id);
+      var mInfo   = getSectionMasteryInfo(sec.id);
+      var mastery = Math.round(mInfo.avgMastery || 0);
+      var beaten  = wasBossBeatenToday(sec.id);
+      var isFocus = focusSection && String(sec.id) === String(focusSection);
+
+      // ── Polygon path ──
+      ctx.beginPath();
+      ctx.moveTo(poly[0].x, poly[0].y);
+      for (var pi = 1; pi < poly.length; pi++) ctx.lineTo(poly[pi].x, poly[pi].y);
+      ctx.closePath();
+
+      // ── Fill ──
+      var fillBase;
+      if (status === 'locked') {
+        fillBase = '#111420';
+      } else if (beaten) {
+        fillBase = '#0d3322';
+      } else if (status === 'conquered' || status === 'in-progress') {
+        fillBase = MASTERY_FILL[Math.min(mastery, 5)];
+      } else {
+        fillBase = CONT_BASE[ci];
+        // Blend dark for not-started
+        fillBase = '#181c2e';
+      }
+
+      var bounds = polyBounds(poly);
+      var grad = ctx.createLinearGradient(bounds.x1, bounds.y1, bounds.x1, bounds.y2);
+      grad.addColorStop(0, lightenHex(fillBase, 0.22));
+      grad.addColorStop(1, darkenHex(fillBase, 0.18));
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      // ── Continent tint overlay (subtle base hue) ──
+      if (status !== 'locked') {
+        ctx.fillStyle = hexToRgba(CONT_BASE[ci], 0.18);
+        ctx.fill();
+      }
+
+      // ── Territory border ──
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = 'rgba(0,0,0,0.75)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // ── Status accent border ──
+      if (isFocus) {
+        ctx.strokeStyle = 'rgba(251,191,36,0.95)';
+        ctx.lineWidth = 5;
+        ctx.stroke();
+      } else if (beaten) {
+        ctx.strokeStyle = 'rgba(34,212,124,0.9)';
+        ctx.lineWidth = 4.5;
+        ctx.stroke();
+      } else if (status === 'conquered') {
+        ctx.strokeStyle = MASTERY_STROKE[Math.min(mastery, 5)];
+        ctx.lineWidth = 3;
+        ctx.stroke();
+      } else if (status === 'in-progress') {
+        ctx.strokeStyle = 'rgba(96,165,250,0.5)';
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+      }
+
+      // ── Labels ──
+      var cen = polyCentroid(poly);
+      var secNum = String(sec.id).replace(/[^0-9]/g, '') || String(idx + 3);
+
+      // Number label
+      ctx.font = 'bold 20px "Courier New",monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.strokeStyle = 'rgba(0,0,0,0.9)';
+      ctx.lineWidth = 5;
+      ctx.strokeText(secNum, cen.x, cen.y - 10);
+      ctx.fillStyle = status === 'locked' ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.95)';
+      ctx.fillText(secNum, cen.x, cen.y - 10);
+
+      // Status icon row
+      if (beaten) {
+        ctx.font = 'bold 14px sans-serif';
+        ctx.fillStyle = '#4ade80';
+        ctx.strokeStyle = 'rgba(0,0,0,0.8)';
+        ctx.lineWidth = 3;
+        ctx.strokeText('\u2713', cen.x + 18, cen.y - 20);
+        ctx.fillText('\u2713', cen.x + 18, cen.y - 20);
+      }
+
+      // Mastery pips (tiny colored dots)
+      if (status !== 'locked' && mastery > 0) {
+        var pipColors = ['#6b7280','#ef4444','#f59e0b','#22c55e','#06b6d4','#818cf8'];
+        var pipColor  = pipColors[Math.min(mastery, 5)];
+        var totalPips = Math.min(mastery, 5);
+        var pipW = totalPips * 8 - 2;
+        for (var p = 0; p < totalPips; p++) {
+          ctx.beginPath();
+          ctx.arc(cen.x - pipW/2 + p * 8, cen.y + 10, 3, 0, Math.PI * 2);
+          ctx.fillStyle = pipColor;
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
+      }
+    });
+
+    // ── Continent name watermarks ──
+    CONT_LAYOUT.forEach(function (layout, ci) {
+      ctx.font = 'bold 10px "Courier New",monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.letterSpacing = '2px';
+      ctx.fillStyle = 'rgba(255,255,255,0.14)';
+      ctx.strokeStyle = 'rgba(0,0,0,0.6)';
+      ctx.lineWidth = 2;
+      var lbl = CONT_NAMES[ci].toUpperCase();
+      ctx.strokeText(lbl, layout.cx, layout.cy - layout.hh - 12);
+      ctx.fillText(lbl, layout.cx, layout.cy - layout.hh - 12);
+    });
+
+    // Polar vignette
+    var northGrad = ctx.createLinearGradient(0, 0, 0, 100);
+    northGrad.addColorStop(0, 'rgba(160,210,255,0.15)');
+    northGrad.addColorStop(1, 'rgba(160,210,255,0)');
+    ctx.fillStyle = northGrad;
+    ctx.fillRect(0, 0, W, 100);
+
+    var southGrad = ctx.createLinearGradient(0, H - 100, 0, H);
+    southGrad.addColorStop(0, 'rgba(160,210,255,0)');
+    southGrad.addColorStop(1, 'rgba(160,210,255,0.12)');
+    ctx.fillStyle = southGrad;
+    ctx.fillRect(0, H - 100, W, 100);
+  }
+
+  // ── Polygon utilities ──────────────────────────────────────────────────────
+  function polyBounds(poly) {
+    var x1=Infinity, y1=Infinity, x2=-Infinity, y2=-Infinity;
+    poly.forEach(function(p){ x1=Math.min(x1,p.x); y1=Math.min(y1,p.y); x2=Math.max(x2,p.x); y2=Math.max(y2,p.y); });
+    return { x1:x1, y1:y1, x2:x2, y2:y2 };
+  }
+
+  function polyCentroid(poly) {
+    var sx=0, sy=0;
+    poly.forEach(function(p){ sx+=p.x; sy+=p.y; });
+    return { x: sx/poly.length, y: sy/poly.length };
+  }
+
+  function hexToRgb(hex) {
+    hex = hex.replace('#','');
+    return {
+      r: parseInt(hex.slice(0,2),16)||0,
+      g: parseInt(hex.slice(2,4),16)||0,
+      b: parseInt(hex.slice(4,6),16)||0
+    };
+  }
+  function hexToRgba(hex, a) {
+    var c = hexToRgb(hex);
+    return 'rgba('+c.r+','+c.g+','+c.b+','+a+')';
+  }
+  function lightenHex(hex, amt) {
+    var c = hexToRgb(hex);
+    return 'rgb('+Math.min(255,c.r+amt*120|0)+','+Math.min(255,c.g+amt*120|0)+','+Math.min(255,c.b+amt*120|0)+')';
+  }
+  function darkenHex(hex, amt) {
+    var c = hexToRgb(hex);
+    return 'rgb('+Math.max(0,c.r-amt*60|0)+','+Math.max(0,c.g-amt*60|0)+','+Math.max(0,c.b-amt*60|0)+')';
+  }
+
+  // ── Point-in-polygon hit test ──────────────────────────────────────────────
+  function pointInPoly(px, py, poly) {
+    var inside = false;
+    for (var i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      var xi = poly[i].x, yi = poly[i].y, xj = poly[j].x, yj = poly[j].y;
+      if (((yi > py) !== (yj > py)) && (px < (xj - xi) * (py - yi) / (yj - yi) + xi))
+        inside = !inside;
+    }
+    return inside;
+  }
+
+  // UV (0–1) → section index (-1 if none)
+  function uvToSection(u, v) {
+    if (!_allPolys) return -1;
+    var px = u * 2048, py = v * 1024;
+    for (var i = 0; i < _allPolys.length; i++) {
+      if (pointInPoly(px, py, _allPolys[i])) return i;
+    }
+    return -1;
+  }
+
+  // ── Main entry point ───────────────────────────────────────────────────────
+  function render(container, sections, getSectionStatus, getSectionMasteryInfo,
+                  wasBossBeatenToday, focusSection, onBattle, onStudyGuide) {
+    ensurePolys();
+
+    if (typeof THREE === 'undefined') {
+      // Three.js should be loaded via index.html — show error
+      container.innerHTML = '<div style="color:#ef4444;padding:40px;text-align:center;font-family:monospace">Three.js not loaded. Add the script tag to index.html.</div>';
+      return;
+    }
+    buildGlobe(container, sections, getSectionStatus, getSectionMasteryInfo,
+               wasBossBeatenToday, focusSection, onBattle, onStudyGuide);
+  }
+
+  // ── Build Three.js scene ───────────────────────────────────────────────────
+  function buildGlobe(container, sections, getSectionStatus, getSectionMasteryInfo,
+                      wasBossBeatenToday, focusSection, onBattle, onStudyGuide) {
+    // Clear any previous instance
+    container.innerHTML = '';
+    container.style.cssText = 'position:relative;width:100%;height:590px;overflow:hidden;background:#02040a;border-radius:14px;cursor:grab;';
+
+    // ── Canvas texture ──────────────────────────────────────
+    var texCanvas = document.createElement('canvas');
+    texCanvas.width  = 2048;
+    texCanvas.height = 1024;
+    drawTexture(texCanvas, sections, getSectionStatus, getSectionMasteryInfo, wasBossBeatenToday, focusSection);
+
+    // ── Three.js renderer ───────────────────────────────────
+    var renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setClearColor(0x02040a, 1);
+    var cW = container.clientWidth  || 860;
+    var cH = container.clientHeight || 590;
+    renderer.setSize(cW, cH);
+    renderer.domElement.style.display = 'block';
+    container.appendChild(renderer.domElement);
+
+    // ── Scene + camera ──────────────────────────────────────
+    var scene  = new THREE.Scene();
+    var camera = new THREE.PerspectiveCamera(42, cW / cH, 0.1, 200);
+    camera.position.z = 3.0;
+
+    // ── Lighting ────────────────────────────────────────────
+    scene.add(new THREE.AmbientLight(0x334466, 1.0));
+    var sun = new THREE.DirectionalLight(0x8ab4ff, 1.4);
+    sun.position.set(5, 3, 5);
+    scene.add(sun);
+    var fill = new THREE.DirectionalLight(0xffffff, 0.25);
+    fill.position.set(-4, -2, 2);
+    scene.add(fill);
+
+    // ── Globe mesh ──────────────────────────────────────────
+    var globeGeo = new THREE.SphereGeometry(1, 80, 80);
+    var texture  = new THREE.CanvasTexture(texCanvas);
+    texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    var globeMat = new THREE.MeshPhongMaterial({
+      map: texture,
+      specular:  new THREE.Color(0x1a3366),
+      shininess: 22,
+    });
+    var globe = new THREE.Mesh(globeGeo, globeMat);
+    scene.add(globe);
+
+    // ── Atmosphere glow shaders ─────────────────────────────
+    var atmVert = [
+      'uniform vec3 viewVector;',
+      'uniform float c; uniform float p;',
+      'varying float intensity;',
+      'void main(){',
+      '  vec3 vN = normalize(normalMatrix * normal);',
+      '  vec3 vV = normalize(normalMatrix * viewVector);',
+      '  intensity = pow(c - dot(vN,vV), p);',
+      '  gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);',
+      '}'
+    ].join('\n');
+    var atmFrag = [
+      'uniform vec3 glowColor;',
+      'varying float intensity;',
+      'void main(){ vec3 g = glowColor * intensity; gl_FragColor = vec4(g, intensity * 0.65); }'
+    ].join('\n');
+
+    function makeAtm(radius, c, p, color, side) {
+      return new THREE.Mesh(
+        new THREE.SphereGeometry(radius, 64, 64),
+        new THREE.ShaderMaterial({
+          uniforms: {
+            c:         { value: c },
+            p:         { value: p },
+            glowColor: { value: new THREE.Color(color) },
+            viewVector:{ value: camera.position.clone() },
+          },
+          vertexShader:   atmVert,
+          fragmentShader: atmFrag,
+          side: side,
+          blending: THREE.AdditiveBlending,
+          transparent: true,
+          depthWrite: false,
+        })
+      );
+    }
+
+    var atmOuter = makeAtm(1.14, 0.38, 5.5, 0x1a66ff, THREE.FrontSide);
+    var atmInner = makeAtm(1.18, 0.55, 9.0, 0x4488ff, THREE.BackSide);
+    scene.add(atmOuter);
+    scene.add(atmInner);
+
+    // ── Starfield ───────────────────────────────────────────
+    var starCount = 2800;
+    var starPos   = new Float32Array(starCount * 3);
+    var rngStar   = mkRng(54321);
+    for (var si = 0; si < starCount; si++) {
+      var theta = rngStar() * Math.PI * 2;
+      var phi   = Math.acos(2 * rngStar() - 1);
+      var r     = 45 + rngStar() * 20;
+      starPos[si*3]   = r * Math.sin(phi) * Math.cos(theta);
+      starPos[si*3+1] = r * Math.sin(phi) * Math.sin(theta);
+      starPos[si*3+2] = r * Math.cos(phi);
+    }
+    var starGeo = new THREE.BufferGeometry();
+    starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+    var starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.09, sizeAttenuation: true, transparent: true, opacity: 0.75 });
+    scene.add(new THREE.Points(starGeo, starMat));
+
+    // ── Tooltip ─────────────────────────────────────────────
+    var tip = document.createElement('div');
+    tip.className = 'globe-tooltip';
+    container.appendChild(tip);
+
+    // ── Control buttons ─────────────────────────────────────
+    var ctrlDiv = document.createElement('div');
+    ctrlDiv.style.cssText = 'position:absolute;top:14px;right:14px;display:flex;flex-direction:column;gap:6px;z-index:50;';
+    ctrlDiv.innerHTML =
+      '<button class="tmap-btn" id="gZoomIn" title="Zoom In">+</button>' +
+      '<button class="tmap-btn" id="gZoomOut" title="Zoom Out">&minus;</button>' +
+      '<button class="tmap-btn" id="gReset" title="Reset">&#8982;</button>' +
+      '<button class="tmap-btn" id="gSpin" title="Toggle Spin">&#9654;</button>';
+    container.appendChild(ctrlDiv);
+
+    // ── Legend ──────────────────────────────────────────────
+    var legDiv = document.createElement('div');
+    legDiv.className = 'tmap-legend';
+    var legItems = [
+      ['#1a1c2e','Not Started'],
+      ['rgba(30,45,74,1)','In Progress'],
+      ['#3d1a1a','Learning'],
+      ['#153d15','Practiced'],
+      ['#0a2d3d','Strong'],
+      ['#0d3322','Beaten Today'],
+    ];
+    legDiv.innerHTML = legItems.map(function(it) {
+      return '<div class="tmap-leg-item"><div class="tmap-leg-dot" style="background:' + it[0] + ';border:1px solid rgba(255,255,255,0.14)"></div>' + it[1] + '</div>';
+    }).join('');
+    container.appendChild(legDiv);
+
+    // ── Interaction state ────────────────────────────────────
+    var rotX = 0.25, rotY = -0.6;
+    var velX = 0, velY = 0.002;
+    var autoSpin = true;
+    var dragging = false, dragMoved = false;
+    var prevX = 0, prevY = 0;
+    var targetZ = 3.0;
+    var spinTimer = null;
+    var hoveredIdx = -1;
+
+    function applyRot() {
+      globe.rotation.x   = rotX;
+      globe.rotation.y   = rotY;
+      atmOuter.rotation.x = rotX; atmOuter.rotation.y = rotY;
+      atmInner.rotation.x = rotX; atmInner.rotation.y = rotY;
+    }
+    applyRot();
+
+    var glCanvas = renderer.domElement;
+
+    glCanvas.addEventListener('pointerdown', function (e) {
+      glCanvas.setPointerCapture(e.pointerId);
+      dragging = true; dragMoved = false;
+      prevX = e.clientX; prevY = e.clientY;
+      velX = 0; velY = 0;
+      autoSpin = false;
+      clearTimeout(spinTimer);
+      container.style.cursor = 'grabbing';
+      e.preventDefault();
+    });
+
+    glCanvas.addEventListener('pointermove', function (e) {
+      if (!dragging) { doHover(e); return; }
+      var dx = e.clientX - prevX, dy = e.clientY - prevY;
+      if (Math.abs(dx) + Math.abs(dy) > 2) dragMoved = true;
+      velY = dx * 0.007;
+      velX = dy * 0.007;
+      rotY += velY;
+      rotX  = Math.max(-1.35, Math.min(1.35, rotX + velX));
+      prevX = e.clientX; prevY = e.clientY;
+      applyRot();
+      e.preventDefault();
+    });
+
+    glCanvas.addEventListener('pointerup', function (e) {
+      dragging = false;
+      container.style.cursor = 'grab';
+      if (!dragMoved) doClick(e);
+      spinTimer = setTimeout(function () { autoSpin = true; }, 5000);
+    });
+
+    glCanvas.addEventListener('wheel', function (e) {
+      targetZ = Math.max(1.7, Math.min(7.0, targetZ + e.deltaY * 0.004));
+      e.preventDefault();
+    }, { passive: false });
+
+    // Button wiring — wait for DOM
+    setTimeout(function () {
+      var bIn  = document.getElementById('gZoomIn');
+      var bOut = document.getElementById('gZoomOut');
+      var bRst = document.getElementById('gReset');
+      var bSpin= document.getElementById('gSpin');
+      if (bIn)   bIn.onclick  = function(){ targetZ = Math.max(1.7, targetZ - 0.6); };
+      if (bOut)  bOut.onclick = function(){ targetZ = Math.min(7.0, targetZ + 0.6); };
+      if (bRst)  bRst.onclick = function(){ targetZ=3.0; rotX=0.25; rotY=-0.6; velX=0; velY=0; };
+      if (bSpin) bSpin.onclick= function(){ autoSpin = !autoSpin; bSpin.style.color = autoSpin ? '#00e8ff' : ''; };
+    }, 50);
+
+    // ── Raycaster helpers ────────────────────────────────────
+    var raycaster = new THREE.Raycaster();
+    var mouse2    = new THREE.Vector2();
+
+    function getHitUV(e) {
+      var rect = glCanvas.getBoundingClientRect();
+      mouse2.x = ((e.clientX - rect.left) / rect.width)  *  2 - 1;
+      mouse2.y = ((e.clientY - rect.top)  / rect.height) * -2 + 1;
+      raycaster.setFromCamera(mouse2, camera);
+      var hits = raycaster.intersectObject(globe);
+      return hits.length ? hits[0].uv : null;
+    }
+
+    function doHover(e) {
+      var uv = getHitUV(e);
+      if (!uv) { tip.style.display = 'none'; hoveredIdx = -1; return; }
+      var idx = uvToSection(uv.x, 1 - uv.y);
+      if (idx < 0 || idx >= sections.length) { tip.style.display = 'none'; hoveredIdx = -1; return; }
+      hoveredIdx = idx;
+
+      var sec    = sections[idx];
+      var status = getSectionStatus(sec.id);
+      var mInfo  = getSectionMasteryInfo(sec.id);
+      var beaten = wasBossBeatenToday(sec.id);
+      var stLbl  = { 'locked':'Locked','not-started':'Not Started','in-progress':'In Progress','conquered':'Conquered','focus':'Focus' }[status] || status;
+      var mLbl   = ['New','Learning','Familiar','Practiced','Strong','Mastered'][Math.round(mInfo.avgMastery||0)] || 'New';
+      var mPct   = mInfo.total ? Math.round((mInfo.mastered||0) / mInfo.total * 100) : 0;
+
+      tip.innerHTML =
+        '<div class="globe-tip-title">' + (sec.name || sec.id) + '</div>' +
+        '<div class="globe-tip-sub">' + (mInfo.mastered||0) + ' / ' + (mInfo.total||0) + ' cards mastered (' + mPct + '%)</div>' +
+        '<div class="globe-tip-tags">' +
+          '<span class="globe-tip-tag">' + stLbl + '</span>' +
+          '<span class="globe-tip-tag globe-tip-mastery">' + mLbl + '</span>' +
+          (beaten ? '<span class="globe-tip-tag globe-tip-beaten">\u2713 Beaten</span>' : '') +
+        '</div>' +
+        '<div class="globe-tip-hint">Click to enter territory</div>';
+
+      var rect = glCanvas.getBoundingClientRect();
+      var tx = e.clientX - rect.left + 16;
+      var ty = e.clientY - rect.top;
+      var tipW = 230;
+      if (tx + tipW > cW) tx = e.clientX - rect.left - tipW - 12;
+      tip.style.left    = Math.max(4, tx) + 'px';
+      tip.style.top     = Math.max(4, ty - 80) + 'px';
+      tip.style.display = 'block';
+    }
+
+    function doClick(e) {
+      var uv = getHitUV(e);
+      if (!uv) return;
+      var idx = uvToSection(uv.x, 1 - uv.y);
+      if (idx < 0 || idx >= sections.length) return;
+      var sec    = sections[idx];
+      var status = getSectionStatus(sec.id);
+      tip.style.display = 'none';
+      if (status === 'locked') {
+        if (typeof Toast !== 'undefined') Toast.show('Complete previous sections to unlock!', 'warning');
+        return;
+      }
+      onStudyGuide(sec.id);
+    }
+
+    // ── Animation loop ───────────────────────────────────────
+    var animId = null;
+    var clock  = typeof THREE !== 'undefined' ? new THREE.Clock() : null;
+
+    function animate() {
+      animId = requestAnimationFrame(animate);
+
+      if (!dragging) {
+        if (autoSpin) {
+          velY = 0.0025;
+          velX *= 0.95;
+        } else {
+          velX *= 0.92;
+          velY *= 0.92;
+        }
+        rotY += velY;
+        rotX  = Math.max(-1.35, Math.min(1.35, rotX + velX));
+        applyRot();
+      }
+
+      // Smooth zoom
+      var zDelta = (targetZ - camera.position.z) * 0.1;
+      camera.position.z += zDelta;
+
+      // Update atmosphere uniforms
+      var vv = camera.position.clone();
+      atmOuter.material.uniforms.viewVector.value = vv;
+      atmInner.material.uniforms.viewVector.value = vv;
+
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    // ── Resize ───────────────────────────────────────────────
+    function onResize() {
+      cW = container.clientWidth  || 860;
+      cH = container.clientHeight || 590;
+      camera.aspect = cW / cH;
+      camera.updateProjectionMatrix();
+      renderer.setSize(cW, cH);
+    }
+    window.addEventListener('resize', onResize);
+
+    // ── Cleanup observer ─────────────────────────────────────
+    var obs = new MutationObserver(function (muts) {
+      muts.forEach(function (m) {
+        m.removedNodes.forEach(function (n) {
+          if (n === glCanvas || !container.parentNode) {
+            cancelAnimationFrame(animId);
+            renderer.dispose();
+            window.removeEventListener('resize', onResize);
+            obs.disconnect();
+          }
+        });
+      });
+    });
+    obs.observe(container, { childList: true });
+  }
+
+  return { render: render };
+
+})();

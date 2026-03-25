@@ -303,8 +303,8 @@
       });
     }
 
-    // Render Risk-style territory map
-    TerritoryMap.render(
+    // Render 3-D globe
+    CcnaGlobe.render(
       el('ankiTerritoryGrid'),
       ANKI_SECTIONS,
       getSectionStatus,

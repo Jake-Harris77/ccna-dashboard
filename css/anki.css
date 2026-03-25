@@ -156,16 +156,12 @@
   transition: width 0.5s;
 }
 
-/* ── Campaign Map (replaces card grid) ───────────────────── */
+/* ── Campaign Map / Globe container ──────────────────────── */
 .anki-map-scroll {
-  overflow: auto;
-  padding: 12px 4px 20px;
-  scrollbar-width: thin;
-  scrollbar-color: var(--accent) var(--bg-elevated);
+  overflow: hidden;
+  padding: 0;
+  /* Globe sets its own height (590px) inline */
 }
-.anki-map-scroll::-webkit-scrollbar { height: 6px; width: 6px; }
-.anki-map-scroll::-webkit-scrollbar-track { background: var(--bg-elevated); border-radius: 3px; }
-.anki-map-scroll::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 3px; }
 
 .anki-map-canvas {
   position: relative;
