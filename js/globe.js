@@ -23,20 +23,31 @@ window.CcnaGlobe = (function () {
     'Switching', 'Security & WAN', 'Advanced Topics'
   ];
 
-  // Simplified 4-state territory colors (no mastery rainbow)
-  // grey = not started | red = in-progress/failed | amber = conquered/review due | green = beaten today
-  var STATUS_FILL = {
-    locked:      '#141824',
-    notStarted:  '#3d4455',
-    inProgress:  '#5c1818',
-    conquered:   '#5a3d00',
-    beaten:      '#12522a',
-  };
+  // Per-continent base colors — each continent has its own hue family
+  // Order matches CONT_LAYOUT: OSI, Network Basics, Routing, Switching, Security & WAN, Advanced Topics
+  var CONT_BASE = [
+    '#1a3a6b',  // 0 OSI Foundations   — deep blue
+    '#3b1a6b',  // 1 Network Basics     — deep purple
+    '#6b3a10',  // 2 Routing            — deep amber/orange
+    '#0f5050',  // 3 Switching          — deep teal
+    '#6b1528',  // 4 Security & WAN     — deep crimson
+    '#0f5535',  // 5 Advanced Topics    — deep emerald
+  ];
+  var CONT_ACCENT = [
+    '#4a8fd4',  // 0 OSI         — bright blue
+    '#9a5dd8',  // 1 Network     — bright purple
+    '#d4853a',  // 2 Routing     — bright orange
+    '#2ab8b8',  // 3 Switching   — bright teal
+    '#d44466',  // 4 Security    — bright crimson
+    '#2ab87a',  // 5 Advanced    — bright emerald
+  ];
+
+  // Status overlays — blended on top of continent color
   var STATUS_STROKE = {
-    notStarted:  'rgba(130,140,160,0.5)',
-    inProgress:  'rgba(220,60,60,0.85)',
-    conquered:   'rgba(200,155,40,0.85)',
-    beaten:      'rgba(40,200,100,0.9)',
+    notStarted:  null,
+    inProgress:  'rgba(255,80,80,0.9)',
+    conquered:   'rgba(220,170,40,0.9)',
+    beaten:      'rgba(50,220,110,0.95)',
   };
 
   // ── Seeded RNG ─────────────────────────────────────────────────────────────
@@ -141,8 +152,6 @@ window.CcnaGlobe = (function () {
       var poly = _allPolys[idx];
       var ci   = _allContIdx[idx];
       var status  = getSectionStatus(sec.id);
-      var mInfo   = getSectionMasteryInfo(sec.id);
-      var mastery = Math.round(mInfo.avgMastery || 0);
       var beaten  = wasBossBeatenToday(sec.id);
       var isFocus = focusSection && String(sec.id) === String(focusSection);
 
@@ -152,75 +161,125 @@ window.CcnaGlobe = (function () {
       for (var pi = 1; pi < poly.length; pi++) ctx.lineTo(poly[pi].x, poly[pi].y);
       ctx.closePath();
 
-      // ── Fill (simple 4-state) ──
-      var fillKey = status === 'locked' ? 'locked'
-        : beaten ? 'beaten'
-        : status === 'in-progress' ? 'inProgress'
-        : status === 'conquered' ? 'conquered'
-        : 'notStarted';
-      var fillBase = STATUS_FILL[fillKey] || STATUS_FILL.notStarted;
-
+      // ── Fill: continent base color + status overlay ──
+      var base   = CONT_BASE[ci]  || '#2a3450';
+      var accent = CONT_ACCENT[ci] || '#4a6aaa';
       var bounds = polyBounds(poly);
+
+      // Status shifts the brightness/tint
+      var topColor, botColor;
+      if (beaten) {
+        topColor = '#1a7a40'; botColor = '#0d4422';
+      } else if (status === 'conquered' || status === 'decayed') {
+        topColor = '#6a5010'; botColor = '#3a2c08';
+      } else if (status === 'in-progress') {
+        topColor = '#7a2020'; botColor = '#3a0f0f';
+      } else {
+        // notStarted — use continent color, top = lightened accent, bot = base
+        topColor = accent; botColor = base;
+      }
+
       var grad = ctx.createLinearGradient(bounds.x1, bounds.y1, bounds.x1, bounds.y2);
-      grad.addColorStop(0, lightenHex(fillBase, 0.55));
-      grad.addColorStop(1, darkenHex(fillBase, 0.10));
+      grad.addColorStop(0,   topColor);
+      grad.addColorStop(0.5, blendHex(topColor, botColor, 0.45));
+      grad.addColorStop(1,   botColor);
       ctx.fillStyle = grad;
+      ctx.fill();
+
+      // ── Inner highlight (top edge shine) ──
+      ctx.beginPath();
+      ctx.moveTo(poly[0].x, poly[0].y);
+      for (var pi2 = 1; pi2 < poly.length; pi2++) ctx.lineTo(poly[pi2].x, poly[pi2].y);
+      ctx.closePath();
+      var shine = ctx.createLinearGradient(bounds.x1, bounds.y1, bounds.x1, bounds.y1 + (bounds.y2-bounds.y1)*0.35);
+      shine.addColorStop(0,   'rgba(255,255,255,0.18)');
+      shine.addColorStop(1,   'rgba(255,255,255,0)');
+      ctx.fillStyle = shine;
       ctx.fill();
 
       // ── Territory border ──
       ctx.lineJoin = 'round';
-      ctx.strokeStyle = 'rgba(0,0,0,0.8)';
-      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = 'rgba(0,0,0,0.75)';
+      ctx.lineWidth = 2;
       ctx.stroke();
 
-      // ── Status accent border ──
+      // ── Status / focus accent border ──
       if (isFocus) {
-        ctx.strokeStyle = 'rgba(251,191,36,0.95)';
-        ctx.lineWidth = 5.5;
+        ctx.strokeStyle = 'rgba(251,191,36,0.98)';
+        ctx.lineWidth = 6;
         ctx.stroke();
-      } else if (fillKey !== 'locked' && fillKey !== 'notStarted') {
-        ctx.strokeStyle = STATUS_STROKE[fillKey] || 'rgba(255,255,255,0.2)';
+      } else if (beaten) {
+        ctx.strokeStyle = 'rgba(50,220,110,0.95)';
         ctx.lineWidth = 4;
+        ctx.stroke();
+      } else if (status === 'conquered' || status === 'decayed') {
+        ctx.strokeStyle = 'rgba(220,170,40,0.9)';
+        ctx.lineWidth = 3.5;
+        ctx.stroke();
+      } else if (status === 'in-progress') {
+        ctx.strokeStyle = 'rgba(255,80,80,0.9)';
+        ctx.lineWidth = 3.5;
+        ctx.stroke();
+      } else {
+        // notStarted — subtle accent color rim
+        ctx.strokeStyle = accent + 'aa';
+        ctx.lineWidth = 1.8;
         ctx.stroke();
       }
 
-      // ── Labels ──
+      // ── Section number label ──
       var cen = polyCentroid(poly);
       var secNum = String(sec.id).replace(/[^0-9]/g, '') || String(idx + 3);
 
-      // Section number — bigger
-      ctx.font = 'bold 26px "Courier New",monospace';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.strokeStyle = 'rgba(0,0,0,0.95)';
-      ctx.lineWidth = 6;
-      ctx.strokeText(secNum, cen.x, cen.y);
-      ctx.fillStyle = status === 'locked' ? 'rgba(255,255,255,0.2)' : '#ffffff';
-      ctx.fillText(secNum, cen.x, cen.y);
 
-      // Status icon (beaten checkmark / in-progress dot)
+      // Thick dark outline for readability
+      ctx.font = 'bold 28px "Courier New",monospace';
+      ctx.strokeStyle = 'rgba(0,0,0,1)';
+      ctx.lineWidth = 7;
+      ctx.lineJoin = 'round';
+      ctx.strokeText(secNum, cen.x, cen.y);
+
+      // Colored glow pass
+      ctx.shadowColor = accent;
+      ctx.shadowBlur = 10;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(secNum, cen.x, cen.y);
+      ctx.shadowBlur = 0;
+      ctx.shadowColor = 'transparent';
+
+      // Status icons
       if (beaten) {
-        ctx.font = 'bold 18px sans-serif';
-        ctx.fillStyle = '#4ade80';
-        ctx.strokeStyle = 'rgba(0,0,0,0.9)';
+        ctx.font = 'bold 20px sans-serif';
+        ctx.strokeStyle = 'rgba(0,0,0,0.95)';
         ctx.lineWidth = 4;
-        ctx.strokeText('\u2713', cen.x + 22, cen.y - 14);
-        ctx.fillText('\u2713', cen.x + 22, cen.y - 14);
+        ctx.strokeText('\u2713', cen.x + 24, cen.y - 16);
+        ctx.fillStyle = '#4ade80';
+        ctx.fillText('\u2713', cen.x + 24, cen.y - 16);
       }
     });
 
-    // ── Continent name labels — in the ocean band ABOVE each continent ──
+    // ── Continent name labels ──
     CONT_LAYOUT.forEach(function (layout, ci) {
-      ctx.font = 'bold 13px "Courier New",monospace';
+      var accent = CONT_ACCENT[ci] || '#00e8ff';
+      var lbl    = CONT_NAMES[ci].toUpperCase();
+      var labelY = layout.cy - layout.hh - 16;
+
+      // Dark backing pill for readability
+      ctx.font = 'bold 14px "Courier New",monospace';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      var lbl = CONT_NAMES[ci].toUpperCase();
-      // Place label in the ocean gap above the continent, not on territories
-      var labelY = layout.cy - layout.hh - 14;
-      // Subtle glow — keep shadowBlur small so it stays in the ocean band
-      ctx.shadowColor = '#00e8ff';
-      ctx.shadowBlur = 8;
-      ctx.fillStyle = '#00e8ff';
+      var tw = ctx.measureText(lbl).width;
+      ctx.fillStyle = 'rgba(0,0,0,0.55)';
+      ctx.beginPath();
+      ctx.roundRect(layout.cx - tw/2 - 8, labelY - 10, tw + 16, 20, 4);
+      ctx.fill();
+
+      // Glow text
+      ctx.shadowColor = accent;
+      ctx.shadowBlur = 12;
+      ctx.fillStyle = accent;
       ctx.fillText(lbl, layout.cx, labelY);
       ctx.shadowBlur = 0;
       ctx.shadowColor = 'transparent';
@@ -272,6 +331,11 @@ window.CcnaGlobe = (function () {
   function darkenHex(hex, amt) {
     var c = hexToRgb(hex);
     return 'rgb('+Math.max(0,c.r-amt*60|0)+','+Math.max(0,c.g-amt*60|0)+','+Math.max(0,c.b-amt*60|0)+')';
+  }
+  // Blend two hex colors: t=0 → a, t=1 → b
+  function blendHex(a, b, t) {
+    var ca = hexToRgb(a), cb = hexToRgb(b);
+    return 'rgb('+(ca.r+(cb.r-ca.r)*t|0)+','+(ca.g+(cb.g-ca.g)*t|0)+','+(ca.b+(cb.b-ca.b)*t|0)+')';
   }
 
   // ── Point-in-polygon hit test ──────────────────────────────────────────────
