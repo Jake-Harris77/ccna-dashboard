@@ -256,39 +256,72 @@
     const streakHTML = streakCount > 0 ? `<div class="anki-streak-indicator">\uD83D\uDD25 ${streakCount}-day streak</div>` : '';
 
     panel.innerHTML = `
-      <div class="anki-map-view">
-        ${dailyBannerHTML}
-        <div class="anki-hud">
-          <div class="anki-hud-left">
-            <div class="anki-level-badge">Lv ${level}</div>
-            <div class="anki-xp-wrap">
-              <div class="anki-xp-bar"><div class="anki-xp-fill" style="width:${pct}%"></div></div>
-              <span class="anki-xp-label">${game.xp} / ${nextLvlXP} XP</span>
+      <div class="anki-globe-layout">
+
+        <!-- ── Left info column ───────────────────────────── -->
+        <div class="anki-globe-panel">
+
+          <!-- Level + XP -->
+          <div class="agp-section">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+              <div class="anki-level-badge">Lv ${level}</div>
+              ${streakHTML}
             </div>
-            ${streakHTML}
+            <div class="anki-xp-bar"><div class="anki-xp-fill" style="width:${pct}%"></div></div>
+            <div class="anki-xp-label" style="margin-top:4px">${game.xp} / ${nextLvlXP} XP</div>
           </div>
-          <div class="anki-hud-right">
-            <div class="anki-stat"><span class="anki-stat-val">${game.totalCorrect}</span><span class="anki-stat-lbl">Correct</span></div>
-            <div class="anki-stat"><span class="anki-stat-val">${game.bestStreak}</span><span class="anki-stat-lbl">Best Streak</span></div>
-            <div class="anki-stat"><span class="anki-stat-val">${conquestPct}%</span><span class="anki-stat-lbl">Conquered</span></div>
-            <div class="anki-stat"><span class="anki-stat-val">${totalMastered}/${totalCards}</span><span class="anki-stat-lbl">Mastered</span></div>
+
+          <!-- Daily Challenge -->
+          ${dailyBannerHTML ? `<div class="agp-section agp-daily">${dailyBannerHTML}</div>` : ''}
+
+          <!-- Actions -->
+          <div class="agp-section" style="display:flex;flex-direction:column;gap:8px">
+            <button class="anki-btn anki-btn-accent" id="ankiQuickPlay" style="width:100%">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              Quick Play (Random)
+            </button>
+            <button class="anki-btn anki-btn-secondary" id="ankiWeakFocus" style="width:100%">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+              Focus Weak Areas
+            </button>
           </div>
+
+          <!-- Conquest progress -->
+          <div class="agp-section">
+            <div class="agp-label">CONQUEST</div>
+            <div class="anki-conquest-bar" style="margin:6px 0">
+              <div class="anki-conquest-fill" style="width:${conquestPct}%"></div>
+            </div>
+            <div style="font-size:11px;color:var(--text-muted)">${conquered} / ${totalSections} sections</div>
+          </div>
+
+          <!-- Stats grid -->
+          <div class="agp-section">
+            <div class="agp-label">STATS</div>
+            <div class="agp-stats-grid">
+              <div class="agp-stat"><span class="agp-val">${game.totalCorrect}</span><span class="agp-key">Correct</span></div>
+              <div class="agp-stat"><span class="agp-val">${game.bestStreak}</span><span class="agp-key">Best Streak</span></div>
+              <div class="agp-stat"><span class="agp-val">${conquestPct}%</span><span class="agp-key">Conquered</span></div>
+              <div class="agp-stat"><span class="agp-val">${totalMastered}</span><span class="agp-key">Mastered</span></div>
+            </div>
+          </div>
+
+          <!-- Legend -->
+          <div class="agp-section">
+            <div class="agp-label">MAP KEY</div>
+            <div style="display:flex;flex-direction:column;gap:5px;margin-top:6px">
+              <div class="agp-leg"><span class="agp-dot" style="background:#737a8b"></span>Not Started</div>
+              <div class="agp-leg"><span class="agp-dot" style="background:#a84848"></span>In Progress</div>
+              <div class="agp-leg"><span class="agp-dot" style="background:#c49a28"></span>Conquered</div>
+              <div class="agp-leg"><span class="agp-dot" style="background:#2aad5e"></span>Beaten Today</div>
+            </div>
+          </div>
+
         </div>
-        <div class="anki-map-actions">
-          <button class="anki-btn anki-btn-accent" id="ankiQuickPlay">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-            Quick Play (Random)
-          </button>
-          <button class="anki-btn anki-btn-secondary" id="ankiWeakFocus">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
-            Focus Weak Areas
-          </button>
-          <div class="anki-conquest-bar-wrap">
-            <div class="anki-conquest-bar"><div class="anki-conquest-fill" style="width:${conquestPct}%"></div></div>
-            <span>${conquered} / ${totalSections} sections conquered</span>
-          </div>
-        </div>
-        <div class="anki-map-scroll" id="ankiTerritoryGrid"></div>
+
+        <!-- ── Globe (fills remaining space) ─────────────── -->
+        <div class="anki-globe-main" id="ankiTerritoryGrid"></div>
+
       </div>
     `;
 

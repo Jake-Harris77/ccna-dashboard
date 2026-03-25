@@ -10,12 +10,12 @@ window.CcnaGlobe = (function () {
   // 6 continents, each 3 cols × 2 rows = 6 territories
   // Positions chosen so each continent is clearly visible as the globe rotates
   var CONT_LAYOUT = [
-    { cx: 310, cy: 250, hw: 195, hh: 148 },   // 0 OSI Foundations  (upper-left)
-    { cx: 870, cy: 220, hw: 185, hh: 142 },   // 1 Network Basics   (upper-center)
-    { cx: 320, cy: 650, hw: 190, hh: 145 },   // 2 Routing          (lower-left)
-    { cx: 870, cy: 650, hw: 190, hh: 145 },   // 3 Switching        (lower-center)
-    { cx: 1450, cy: 240, hw: 200, hh: 148 },  // 4 Security & WAN   (upper-right)
-    { cx: 1450, cy: 650, hw: 195, hh: 145 },  // 5 Advanced Topics  (lower-right)
+    { cx: 330, cy: 255, hw: 240, hh: 175 },   // 0 OSI Foundations  (upper-left)
+    { cx: 880, cy: 225, hw: 235, hh: 170 },   // 1 Network Basics   (upper-center)
+    { cx: 330, cy: 660, hw: 238, hh: 172 },   // 2 Routing          (lower-left)
+    { cx: 880, cy: 660, hw: 238, hh: 172 },   // 3 Switching        (lower-center)
+    { cx: 1490, cy: 248, hw: 242, hh: 175 },  // 4 Security & WAN   (upper-right)
+    { cx: 1490, cy: 660, hw: 240, hh: 172 },  // 5 Advanced Topics  (lower-right)
   ];
 
   var CONT_NAMES = [
@@ -23,33 +23,21 @@ window.CcnaGlobe = (function () {
     'Switching', 'Security & WAN', 'Advanced Topics'
   ];
 
-  // Base fill colors per continent (dark, vivid)
-  var CONT_BASE = [
-    '#3b1f6e', // 0 purple
-    '#1a3a6e', // 1 blue
-    '#1a4a28', // 2 green
-    '#4a2e10', // 3 amber
-    '#5a1a1a', // 4 red
-    '#0d3d4f', // 5 cyan
-  ];
-
-  // Mastery-level territory colors (0–5) — vivid enough for MeshBasicMaterial
-  var MASTERY_FILL = [
-    '#2a2f50', // 0 new       — dark blue-slate
-    '#5a2020', // 1 learning  — dark red
-    '#5a3f10', // 2 familiar  — dark amber
-    '#1a5a1a', // 3 practiced — dark green
-    '#0d4d60', // 4 strong    — dark teal
-    '#2a2a80', // 5 mastered  — deep blue
-  ];
-  var MASTERY_STROKE = [
-    'rgba(255,255,255,0.12)',
-    'rgba(239,68,68,0.7)',
-    'rgba(245,158,11,0.7)',
-    'rgba(34,197,94,0.65)',
-    'rgba(6,182,212,0.75)',
-    'rgba(129,140,248,0.8)',
-  ];
+  // Simplified 4-state territory colors (no mastery rainbow)
+  // grey = not started | red = in-progress/failed | amber = conquered/review due | green = beaten today
+  var STATUS_FILL = {
+    locked:      '#141824',
+    notStarted:  '#3d4455',
+    inProgress:  '#5c1818',
+    conquered:   '#5a3d00',
+    beaten:      '#12522a',
+  };
+  var STATUS_STROKE = {
+    notStarted:  'rgba(130,140,160,0.5)',
+    inProgress:  'rgba(220,60,60,0.85)',
+    conquered:   'rgba(200,155,40,0.85)',
+    beaten:      'rgba(40,200,100,0.9)',
+  };
 
   // ── Seeded RNG ─────────────────────────────────────────────────────────────
   function mkRng(seed) {
@@ -164,54 +152,35 @@ window.CcnaGlobe = (function () {
       for (var pi = 1; pi < poly.length; pi++) ctx.lineTo(poly[pi].x, poly[pi].y);
       ctx.closePath();
 
-      // ── Fill ──
-      var fillBase;
-      if (status === 'locked') {
-        fillBase = '#141824';
-      } else if (beaten) {
-        fillBase = '#1a5c38';
-      } else if (status === 'conquered' || status === 'in-progress') {
-        fillBase = MASTERY_FILL[Math.min(mastery, 5)];
-      } else {
-        // not-started: blend continent base color with dark
-        fillBase = '#252b42';
-      }
+      // ── Fill (simple 4-state) ──
+      var fillKey = status === 'locked' ? 'locked'
+        : beaten ? 'beaten'
+        : status === 'in-progress' ? 'inProgress'
+        : status === 'conquered' ? 'conquered'
+        : 'notStarted';
+      var fillBase = STATUS_FILL[fillKey] || STATUS_FILL.notStarted;
 
       var bounds = polyBounds(poly);
       var grad = ctx.createLinearGradient(bounds.x1, bounds.y1, bounds.x1, bounds.y2);
-      grad.addColorStop(0, lightenHex(fillBase, 0.45));
-      grad.addColorStop(1, darkenHex(fillBase, 0.12));
+      grad.addColorStop(0, lightenHex(fillBase, 0.55));
+      grad.addColorStop(1, darkenHex(fillBase, 0.10));
       ctx.fillStyle = grad;
       ctx.fill();
 
-      // ── Continent tint overlay (subtle base hue) ──
-      if (status !== 'locked') {
-        ctx.fillStyle = hexToRgba(CONT_BASE[ci], 0.18);
-        ctx.fill();
-      }
-
       // ── Territory border ──
       ctx.lineJoin = 'round';
-      ctx.strokeStyle = 'rgba(0,0,0,0.75)';
-      ctx.lineWidth = 2;
+      ctx.strokeStyle = 'rgba(0,0,0,0.8)';
+      ctx.lineWidth = 2.5;
       ctx.stroke();
 
       // ── Status accent border ──
       if (isFocus) {
         ctx.strokeStyle = 'rgba(251,191,36,0.95)';
-        ctx.lineWidth = 5;
+        ctx.lineWidth = 5.5;
         ctx.stroke();
-      } else if (beaten) {
-        ctx.strokeStyle = 'rgba(34,212,124,0.9)';
-        ctx.lineWidth = 4.5;
-        ctx.stroke();
-      } else if (status === 'conquered') {
-        ctx.strokeStyle = MASTERY_STROKE[Math.min(mastery, 5)];
-        ctx.lineWidth = 3;
-        ctx.stroke();
-      } else if (status === 'in-progress') {
-        ctx.strokeStyle = 'rgba(96,165,250,0.5)';
-        ctx.lineWidth = 2.5;
+      } else if (fillKey !== 'locked' && fillKey !== 'notStarted') {
+        ctx.strokeStyle = STATUS_STROKE[fillKey] || 'rgba(255,255,255,0.2)';
+        ctx.lineWidth = 4;
         ctx.stroke();
       }
 
@@ -219,56 +188,42 @@ window.CcnaGlobe = (function () {
       var cen = polyCentroid(poly);
       var secNum = String(sec.id).replace(/[^0-9]/g, '') || String(idx + 3);
 
-      // Number label
-      ctx.font = 'bold 20px "Courier New",monospace';
+      // Section number — bigger
+      ctx.font = 'bold 26px "Courier New",monospace';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.strokeStyle = 'rgba(0,0,0,0.9)';
-      ctx.lineWidth = 5;
-      ctx.strokeText(secNum, cen.x, cen.y - 10);
-      ctx.fillStyle = status === 'locked' ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.95)';
-      ctx.fillText(secNum, cen.x, cen.y - 10);
+      ctx.strokeStyle = 'rgba(0,0,0,0.95)';
+      ctx.lineWidth = 6;
+      ctx.strokeText(secNum, cen.x, cen.y);
+      ctx.fillStyle = status === 'locked' ? 'rgba(255,255,255,0.2)' : '#ffffff';
+      ctx.fillText(secNum, cen.x, cen.y);
 
-      // Status icon row
+      // Status icon (beaten checkmark / in-progress dot)
       if (beaten) {
-        ctx.font = 'bold 14px sans-serif';
+        ctx.font = 'bold 18px sans-serif';
         ctx.fillStyle = '#4ade80';
-        ctx.strokeStyle = 'rgba(0,0,0,0.8)';
-        ctx.lineWidth = 3;
-        ctx.strokeText('\u2713', cen.x + 18, cen.y - 20);
-        ctx.fillText('\u2713', cen.x + 18, cen.y - 20);
-      }
-
-      // Mastery pips (tiny colored dots)
-      if (status !== 'locked' && mastery > 0) {
-        var pipColors = ['#6b7280','#ef4444','#f59e0b','#22c55e','#06b6d4','#818cf8'];
-        var pipColor  = pipColors[Math.min(mastery, 5)];
-        var totalPips = Math.min(mastery, 5);
-        var pipW = totalPips * 8 - 2;
-        for (var p = 0; p < totalPips; p++) {
-          ctx.beginPath();
-          ctx.arc(cen.x - pipW/2 + p * 8, cen.y + 10, 3, 0, Math.PI * 2);
-          ctx.fillStyle = pipColor;
-          ctx.fill();
-          ctx.strokeStyle = 'rgba(0,0,0,0.5)';
-          ctx.lineWidth = 1;
-          ctx.stroke();
-        }
+        ctx.strokeStyle = 'rgba(0,0,0,0.9)';
+        ctx.lineWidth = 4;
+        ctx.strokeText('\u2713', cen.x + 22, cen.y - 14);
+        ctx.fillText('\u2713', cen.x + 22, cen.y - 14);
       }
     });
 
-    // ── Continent name watermarks ──
+    // ── Continent name labels — big, glowing cyan ──
     CONT_LAYOUT.forEach(function (layout, ci) {
-      ctx.font = 'bold 10px "Courier New",monospace';
+      ctx.font = 'bold 15px "Courier New",monospace';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.letterSpacing = '2px';
-      ctx.fillStyle = 'rgba(255,255,255,0.14)';
-      ctx.strokeStyle = 'rgba(0,0,0,0.6)';
-      ctx.lineWidth = 2;
       var lbl = CONT_NAMES[ci].toUpperCase();
-      ctx.strokeText(lbl, layout.cx, layout.cy - layout.hh - 12);
-      ctx.fillText(lbl, layout.cx, layout.cy - layout.hh - 12);
+      var labelY = layout.cy - layout.hh + 18;
+      // Glow layer
+      ctx.shadowColor = '#00e8ff';
+      ctx.shadowBlur = 14;
+      ctx.fillStyle = '#00e8ff';
+      ctx.fillText(lbl, layout.cx, labelY);
+      ctx.fillText(lbl, layout.cx, labelY); // double pass = stronger glow
+      ctx.shadowBlur = 0;
+      ctx.shadowColor = 'transparent';
     });
 
     // Polar vignette
@@ -359,7 +314,7 @@ window.CcnaGlobe = (function () {
                       wasBossBeatenToday, focusSection, onBattle, onStudyGuide) {
     // Clear any previous instance
     container.innerHTML = '';
-    container.style.cssText = 'position:relative;width:100%;height:590px;overflow:hidden;background:#02040a;border-radius:14px;cursor:grab;';
+    container.style.cssText = 'position:relative;width:100%;height:100%;min-height:480px;overflow:hidden;background:#02040a;cursor:grab;';
 
     // ── Canvas texture ──────────────────────────────────────
     var texCanvas = document.createElement('canvas');
@@ -428,10 +383,9 @@ window.CcnaGlobe = (function () {
       );
     }
 
-    var atmOuter = makeAtm(1.14, 0.38, 5.5, 0x1a66ff, THREE.FrontSide);
-    var atmInner = makeAtm(1.18, 0.55, 9.0, 0x4488ff, THREE.BackSide);
+    // Single subtle outer glow only — no BackSide inner (that caused the white crescent)
+    var atmOuter = makeAtm(1.12, 0.22, 5.0, 0x0066ff, THREE.FrontSide);
     scene.add(atmOuter);
-    scene.add(atmInner);
 
     // ── Starfield ───────────────────────────────────────────
     var starCount = 2800;
@@ -469,12 +423,10 @@ window.CcnaGlobe = (function () {
     var legDiv = document.createElement('div');
     legDiv.className = 'tmap-legend';
     var legItems = [
-      ['#1a1c2e','Not Started'],
-      ['rgba(30,45,74,1)','In Progress'],
-      ['#3d1a1a','Learning'],
-      ['#153d15','Practiced'],
-      ['#0a2d3d','Strong'],
-      ['#0d3322','Beaten Today'],
+      ['#737a8b','Not Started'],
+      ['#a84848','In Progress'],
+      ['#c49a28','Conquered / Review'],
+      ['#2aad5e','Beaten Today ✓'],
     ];
     legDiv.innerHTML = legItems.map(function(it) {
       return '<div class="tmap-leg-item"><div class="tmap-leg-dot" style="background:' + it[0] + ';border:1px solid rgba(255,255,255,0.14)"></div>' + it[1] + '</div>';
@@ -495,7 +447,6 @@ window.CcnaGlobe = (function () {
       globe.rotation.x   = rotX;
       globe.rotation.y   = rotY;
       atmOuter.rotation.x = rotX; atmOuter.rotation.y = rotY;
-      atmInner.rotation.x = rotX; atmInner.rotation.y = rotY;
     }
     applyRot();
 
@@ -573,17 +524,26 @@ window.CcnaGlobe = (function () {
       var status = getSectionStatus(sec.id);
       var mInfo  = getSectionMasteryInfo(sec.id);
       var beaten = wasBossBeatenToday(sec.id);
-      var stLbl  = { 'locked':'Locked','not-started':'Not Started','in-progress':'In Progress','conquered':'Conquered','focus':'Focus' }[status] || status;
-      var mLbl   = ['New','Learning','Familiar','Practiced','Strong','Mastered'][Math.round(mInfo.avgMastery||0)] || 'New';
+      var stLbl  = { 'locked':'🔒 Locked','not-started':'⬜ Not Started','in-progress':'🔴 In Progress','conquered':'🟡 Conquered','focus':'🎯 Focus' }[status] || status;
+      var avgM   = Math.round(mInfo.avgMastery || 0);
+      var mLbl   = ['New','Learning','Familiar','Practiced','Strong','Mastered'][avgM] || 'New';
       var mPct   = mInfo.total ? Math.round((mInfo.mastered||0) / mInfo.total * 100) : 0;
+      var stars  = '\u2605'.repeat(avgM) + '\u2606'.repeat(Math.max(0, 5 - avgM));
+      var mColor = ['#6b7280','#ef4444','#f59e0b','#22c55e','#06b6d4','#818cf8'][avgM] || '#6b7280';
 
       tip.innerHTML =
         '<div class="globe-tip-title">' + (sec.name || sec.id) + '</div>' +
+        '<div class="globe-tip-mastery-row">' +
+          '<span style="color:' + mColor + ';font-size:14px;letter-spacing:1px">' + stars + '</span>' +
+          '<span style="color:' + mColor + ';font-weight:700;margin-left:6px">' + mLbl + '</span>' +
+          '<span style="color:#64748b;margin-left:4px">(' + avgM + '/5)</span>' +
+        '</div>' +
+        '<div class="globe-tip-bar-wrap"><div class="globe-tip-bar" style="width:' + mPct + '%;background:' + mColor + '"></div></div>' +
         '<div class="globe-tip-sub">' + (mInfo.mastered||0) + ' / ' + (mInfo.total||0) + ' cards mastered (' + mPct + '%)</div>' +
         '<div class="globe-tip-tags">' +
           '<span class="globe-tip-tag">' + stLbl + '</span>' +
-          '<span class="globe-tip-tag globe-tip-mastery">' + mLbl + '</span>' +
-          (beaten ? '<span class="globe-tip-tag globe-tip-beaten">\u2713 Beaten</span>' : '') +
+          (beaten ? '<span class="globe-tip-tag globe-tip-beaten">\u2713 Beaten Today</span>' : '') +
+          ((mInfo.dueCount||0) > 0 ? '<span class="globe-tip-tag" style="color:#f59e0b">' + mInfo.dueCount + ' due</span>' : '') +
         '</div>' +
         '<div class="globe-tip-hint">Click to enter territory</div>';
 
@@ -635,10 +595,8 @@ window.CcnaGlobe = (function () {
       var zDelta = (targetZ - camera.position.z) * 0.1;
       camera.position.z += zDelta;
 
-      // Update atmosphere uniforms
-      var vv = camera.position.clone();
-      atmOuter.material.uniforms.viewVector.value = vv;
-      atmInner.material.uniforms.viewVector.value = vv;
+      // Update atmosphere uniform
+      atmOuter.material.uniforms.viewVector.value = camera.position.clone();
 
       renderer.render(scene, camera);
     }
