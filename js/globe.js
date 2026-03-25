@@ -260,27 +260,48 @@ window.CcnaGlobe = (function () {
       }
     });
 
-    // ── Continent name labels ──
+    // ── Continent name labels — drawn at continent CENTER as a pill ──
+    // Avoids the polar crush: top continents were at y≈40–64 (north pole region)
     CONT_LAYOUT.forEach(function (layout, ci) {
       var accent = CONT_ACCENT[ci] || '#00e8ff';
-      var lbl    = CONT_NAMES[ci].toUpperCase();
-      var labelY = layout.cy - layout.hh - 16;
+      // Split long names onto two lines if needed
+      var words  = CONT_NAMES[ci].toUpperCase().split(' ');
+      var line1  = words.slice(0, Math.ceil(words.length / 2)).join(' ');
+      var line2  = words.slice(Math.ceil(words.length / 2)).join(' ');
+      var twoLine = words.length > 2;
 
-      // Dark backing pill for readability
-      ctx.font = 'bold 14px "Courier New",monospace';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      var tw = ctx.measureText(lbl).width;
-      ctx.fillStyle = 'rgba(0,0,0,0.55)';
+
+      var lines = twoLine ? [line1, line2] : [CONT_NAMES[ci].toUpperCase()];
+      var lh = 17; // line height px
+      var totalH = lines.length * lh;
+
+      // Measure widest line for pill
+      ctx.font = 'bold 13px "Courier New",monospace';
+      var maxW = 0;
+      lines.forEach(function(l){ maxW = Math.max(maxW, ctx.measureText(l).width); });
+
+      // Dark semi-transparent pill behind text
+      var px = layout.cx, py = layout.cy - layout.hh + 22;
+      ctx.fillStyle = 'rgba(0,0,0,0.62)';
       ctx.beginPath();
-      ctx.roundRect(layout.cx - tw/2 - 8, labelY - 10, tw + 16, 20, 4);
+      ctx.roundRect(px - maxW/2 - 10, py - totalH/2 - 7, maxW + 20, totalH + 14, 6);
       ctx.fill();
 
-      // Glow text
+      // Accent border on pill
+      ctx.strokeStyle = accent + '88';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Text with glow
       ctx.shadowColor = accent;
-      ctx.shadowBlur = 12;
-      ctx.fillStyle = accent;
-      ctx.fillText(lbl, layout.cx, labelY);
+      ctx.shadowBlur = 10;
+      ctx.fillStyle = '#ffffff';
+      lines.forEach(function(l, li) {
+        var ty = py + (li - (lines.length - 1) / 2) * lh;
+        ctx.fillText(l, px, ty);
+      });
       ctx.shadowBlur = 0;
       ctx.shadowColor = 'transparent';
     });
@@ -401,11 +422,28 @@ window.CcnaGlobe = (function () {
     var camera = new THREE.PerspectiveCamera(42, cW / cH, 0.1, 200);
     camera.position.z = 3.0;
 
-    // ── Globe mesh (MeshBasicMaterial — no lighting math, texture renders exact) ──
+    // ── Lighting ────────────────────────────────────────────
+    // Soft ambient so dark side isn't pitch black
+    var ambLight = new THREE.AmbientLight(0x334466, 0.7);
+    scene.add(ambLight);
+    // Main sun — upper-left-front
+    var sunLight = new THREE.DirectionalLight(0xfff4e0, 1.5);
+    sunLight.position.set(-2.5, 2.0, 3.5);
+    scene.add(sunLight);
+    // Subtle fill from the right so colors stay readable
+    var fillLight = new THREE.DirectionalLight(0x2244aa, 0.25);
+    fillLight.position.set(3, -1, -1);
+    scene.add(fillLight);
+
+    // ── Globe mesh (Phong — reacts to lights for 3-D shading) ──
     var globeGeo = new THREE.SphereGeometry(1, 80, 80);
     var texture  = new THREE.CanvasTexture(texCanvas);
     texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
-    var globeMat = new THREE.MeshBasicMaterial({ map: texture });
+    var globeMat = new THREE.MeshPhongMaterial({
+      map:       texture,
+      shininess: 18,
+      specular:  new THREE.Color(0x224466),
+    });
     var globe = new THREE.Mesh(globeGeo, globeMat);
     scene.add(globe);
 
@@ -497,12 +535,12 @@ window.CcnaGlobe = (function () {
     container.appendChild(legDiv);
 
     // ── Interaction state ────────────────────────────────────
-    var rotX = 0.25, rotY = -0.6;
+    var rotX = 0.10, rotY = -0.6;
     var velX = 0, velY = 0.002;
     var autoSpin = true;
     var dragging = false, dragMoved = false;
     var prevX = 0, prevY = 0;
-    var targetZ = 3.0;
+    var targetZ = 3.4;
     var spinTimer = null;
     var hoveredIdx = -1;
 
@@ -559,7 +597,7 @@ window.CcnaGlobe = (function () {
       var bSpin= document.getElementById('gSpin');
       if (bIn)   bIn.onclick  = function(){ targetZ = Math.max(1.7, targetZ - 0.6); };
       if (bOut)  bOut.onclick = function(){ targetZ = Math.min(7.0, targetZ + 0.6); };
-      if (bRst)  bRst.onclick = function(){ targetZ=3.0; rotX=0.25; rotY=-0.6; velX=0; velY=0; };
+      if (bRst)  bRst.onclick = function(){ targetZ=3.4; rotX=0.10; rotY=-0.6; velX=0; velY=0; };
       if (bSpin) bSpin.onclick= function(){ autoSpin = !autoSpin; bSpin.style.color = autoSpin ? '#00e8ff' : ''; };
     }, 50);
 
