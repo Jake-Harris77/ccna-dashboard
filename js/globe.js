@@ -383,8 +383,8 @@ window.CcnaGlobe = (function () {
       );
     }
 
-    // Single subtle outer glow only — no BackSide inner (that caused the white crescent)
-    var atmOuter = makeAtm(1.12, 0.22, 5.0, 0x0066ff, THREE.FrontSide);
+    // Very subtle edge-only glow — keep c very small so only the silhouette edge glows
+    var atmOuter = makeAtm(1.10, 0.08, 7.0, 0x1a55cc, THREE.FrontSide);
     scene.add(atmOuter);
 
     // ── Starfield ───────────────────────────────────────────
